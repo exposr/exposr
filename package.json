@@ -1,0 +1,17 @@
+{
+  "name": "untitled-tunnel-project-client",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "author": "Fredrik Lindberg <fli@shapeshifter.se>",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^0.19.2",
+    "dnscache": "^1.0.2",
+    "http-parser-js": "^0.5.2",
+    "human-readable-ids": "^1.0.4",
+    "port-numbers": "^6.0.0",
+    "ws": "^7.3.1",
+    "yargs": "^15.4.1"
+  }
+}
