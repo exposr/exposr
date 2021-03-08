@@ -84,11 +84,11 @@ const createAndEstablish = async (ctx) => {
         allowInsecure: ctx.allowInsecure,
     };
     const tunnel = new Tunnel(ctx.upstream, opts);
-    tunnel.on('open', (tunnel) => {
-        console.log(`Tunnel established: ${ctx.tunnelConfig.ingress} <> ${ctx.upstream}`);
+    tunnel.on('open', (endpoint) => {
+        console.log(`Tunnel established: ${ctx.tunnelConfig.ingress.http.url} <> ${ctx.upstream}`);
         ctx.established = true;
     });
-    tunnel.on('close', (tunnel, wasEstablished) => {
+    tunnel.on('close', (endpoint, wasEstablished) => {
         ctx.established = false;
         ctx.wasEstablished = wasEstablished;
         wasEstablished &&
@@ -111,7 +111,7 @@ const createAndEstablish = async (ctx) => {
     tunnelManager.create(ctx.tunnelId).then((tunnelConfig) => {
         console.log(`Tunnel '${ctx.tunnelId}' allocated, establishing tunnel...`)
         ctx.tunnelConfig = tunnelConfig;
-        tunnel.connect(tunnelConfig.tunnels['websocket']);
+        tunnel.connect(tunnelConfig.endpoints.ws.url);
     }).catch((err) => {
         if (!ctx.lastTunnelManagerErr || ctx.lastTunnelManagerErr.code != err.code) {
             console.log(`Failed to allocate tunnel '${ctx.tunnelId}': ${err.message}, retrying`);

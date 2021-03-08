@@ -19,11 +19,11 @@ export class Tunnel extends EventEmitter {
         this.established = false;
     }
 
-    connect(tunnel) {
-        const ws = this.sock = new WebSocket(tunnel.endpoint, { handshakeTimeout: 2000 });
+    connect(endpoint) {
+        const ws = this.sock = new WebSocket(endpoint, { handshakeTimeout: 2000 });
 
         ws.once('unexpected-response', (req, res) => {
-            const err = new Error(`Failed to establish websocket to ${tunnel.endpoint}: ${res.statusCode} ${res.statusMessage}`)
+            const err = new Error(`Failed to establish websocket to ${endpoint}: ${res.statusCode} ${res.statusMessage}`)
             if (res.statusCode == 401) {
                 err.code = Errors.ERR_NOT_AUTHORIZED;
             } else {
@@ -33,7 +33,7 @@ export class Tunnel extends EventEmitter {
         });
 
         ws.once('timeout', () => {
-            const err = new Error(`Failed to establish websocket to ${tunnel.endpoint}: Handshake timeout`)
+            const err = new Error(`Failed to establish websocket to ${endpoint}: Handshake timeout`)
             err.code = Errors.ERR_CON_TIMEOUT;
             this.emit('error', err);
         })
@@ -83,7 +83,7 @@ export class Tunnel extends EventEmitter {
             });
 
             this.established = true;
-            this.emit('open', tunnel);
+            this.emit('open', endpoint);
         });
 
         ws.once('error', (wsErr) => {
@@ -92,7 +92,7 @@ export class Tunnel extends EventEmitter {
             if (this.established) {
                 err.message = `Websocket error: ${wsErr.message}`;
             } else {
-                err.message = `Failed to establish websocket to ${tunnel.endpoint}: ${wsErr.message}`;
+                err.message = `Failed to establish websocket to ${endpoint}: ${wsErr.message}`;
             }
             this.emit('error', err);
         });
@@ -100,7 +100,7 @@ export class Tunnel extends EventEmitter {
         ws.once('close', (code, reason) => {
             const wasEstablished = this.established;
             this.established = false;
-            this.emit('close', tunnel, wasEstablished)
+            this.emit('close', endpoint, wasEstablished)
         });
     }
 
