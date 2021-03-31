@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
 import WebSocket from 'ws';
-import WebSocketMultiplex from './ws-multiplex.js';
 import UpstreamConnector from './upstream-connector.js';
+import WebSocketTransport from './transport/ws/ws-transport.js';
 
 export const Errors = {
     ERR_NOT_AUTHORIZED: -65536,
@@ -39,52 +39,46 @@ export class Tunnel extends EventEmitter {
         })
 
         ws.once('open', () => {
-            const multiplex = new WebSocketMultiplex(ws);
-
-            const channels = {};
-            multiplex.on('connect', (channel) => {
+            const transport = new WebSocketTransport({
+                socket: ws
+            });
+            transport.listen((sock) => {
                 this.upstreamConnector.connect((err, upstream) => {
                     if (err) {
-                        multiplex.close(channel);
+                        sock.destroy();
+                        upstream && upstream.destroy();
                         this.emit('error', err);
                         return;
                     }
-                    channels[channel] = upstream;
-                    multiplex.open(channel);
+                    upstream.on('close', () => {
+                        sock.unpipe();
+                        sock.destroy();
+                    });
+
+                    sock.on('close', () => {
+                        upstream.unpipe();
+                        upstream.destroy();
+                    });
+
+                    let pipe = upstream.pipe(sock);
+
+                    const transformerStream = this.opts.transformerStream();
+                    if (transformerStream) {
+                        pipe = pipe.pipe(transformerStream);
+                    }
+                    pipe.pipe(upstream);
                 });
             });
 
-            multiplex.on('open', (channel, stream) => {
-                const transformerStream = this.opts.transformerStream();
-                const upstream = channels[channel];
-                if (!upstream) {
-                    return;
-                }
-
-                let pipe = upstream.pipe(stream);
-                if (transformerStream)
-                    pipe = pipe.pipe(transformerStream);
-                pipe.pipe(upstream);
-            });
-
-            multiplex.on('close', (channel) => {
-                const upstream = channels[channel];
-                if (!upstream) {
-                    return;
-                }
-                upstream.unpipe();
-                upstream.end();
-                delete channels[channel];
-            });
-
             ws.once('close', () => {
-                multiplex.terminate();
-                ws.terminate();
+                transport.close();
+                transport.destroy();
             });
 
             this.established = true;
             this.emit('open', endpoint);
-        });
+
+         });
 
         ws.once('error', (wsErr) => {
             const err = new Error();
