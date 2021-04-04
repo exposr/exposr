@@ -3,6 +3,8 @@ import { Duplex } from 'stream';
 import { EventEmitter } from 'events';
 import assert from 'assert/strict';
 import { Logger } from '../../logger.js';
+import { ECONNREFUSED, EINPROGRESS, EMFILE, ETIMEDOUT, EPIPE } from 'constants';
+import CustomError from '../../utils/errors.js';
 
 // Multiplexes multiple streams over one websocket connection
 // Bi-directional channel creation.
@@ -12,7 +14,7 @@ import { Logger } from '../../logger.js';
 // [VERSION][TYPE][CHANNEL][LENGTH][DATA...]
 //
 class WebSocketTransport extends EventEmitter {
-    static MAX_CHANNELS = 8192;
+    static MAX_CHANNELS = 65536;
 
     static MESSAGE_DATA = 1;
     static MESSAGE_CON = 2;
@@ -54,6 +56,7 @@ class WebSocketTransport extends EventEmitter {
             this.destroy();
         });
 
+        this.maxChannels = opts.maxChannels || WebSocketTransport.MAX_CHANNELS;
         this.channelId = 0;
     }
 
@@ -103,8 +106,7 @@ class WebSocketTransport extends EventEmitter {
     _sendMessage(type, channel, data = undefined, callback) {
         assert(channel !== undefined);
         if (this._socket.readyState !== WebSocket.OPEN) {
-            callback(new Error("transport closed"))
-            return;
+            return callback(new CustomError(EPIPE, `transport closed`));
         }
 
         const message = this._encodeMessage(type, channel, data);
@@ -178,10 +180,15 @@ class WebSocketTransport extends EventEmitter {
     async _openChannel(sock, timeout, callback) {
         assert(sock !== undefined);
         if (sock.fd === undefined) {
-            sock.fd = await this._getChannelId();
+            sock.fd = await this._getChannelId(1000);
+            if (sock.fd == undefined) {
+                return callback(new CustomError(EMFILE, `No channels free (${this.maxChannels})`));
+            }
         }
 
         const fd = sock.fd;
+        this.openSockets[fd] = sock;
+
         let connectTimeout;
 
         const handle = (err) => {
@@ -189,10 +196,11 @@ class WebSocketTransport extends EventEmitter {
             this._eventBus.removeAllListeners(`fin-${fd}`);
             connectTimeout && clearTimeout(connectTimeout);
             if (!err) {
-                this.openSockets[fd] = sock;
                 this._eventBus.once(`fin-${fd}`, (fd) => {
                     sock.destroy();
                 });
+            } else {
+                this._destroy(fd);
             }
             callback(err);
         };
@@ -205,10 +213,10 @@ class WebSocketTransport extends EventEmitter {
                 handle();
             });
             this._eventBus.once(`fin-${fd}`, (fd) => {
-                handle(new Error("refused"));
+                handle(new CustomError(ECONNREFUSED, `connection refused fd=${fd}`));
             });
             connectTimeout = setTimeout(() => {
-                handle(new Error("timeout"));
+                handle(new CustomError(ETIMEDOUT, `connection timeout fd=${fd}`));
             }, timeout);
         });
     }
@@ -227,11 +235,42 @@ class WebSocketTransport extends EventEmitter {
         this._eventBus.removeAllListeners(`ack-${fd}`);
         this._eventBus.removeAllListeners(`fin-${fd}`);
         delete this.openSockets[fd];
+        this._eventBus.emit('close', fd);
     }
 
-    async _getChannelId() {
-        // FIXME
-        return this.channelId++;
+    async _getChannelId(timeout) {
+
+        if (Object.keys(this.openSockets).length >= this.maxChannels) {
+            const startWait = process.hrtime.bigint();
+            await new Promise((resolve) => {
+                const onEvent = () => {
+                    clearTimeout(onTimer);
+                    this._eventBus.removeListener('close', onEvent)
+                    resolve();
+                }
+                const onTimer = setTimeout(onEvent, timeout);
+                this._eventBus.once('close', onEvent);
+            });
+            const elapsedMs = Number((process.hrtime.bigint() - BigInt(startWait))) / 1e6;
+
+            if (Object.keys(this.openSockets).length >= this.maxChannels) {
+                timeout -= elapsedMs;
+                return timeout > 0 ? this._getChannelId(timeout) : undefined;
+            } else {
+                return undefined;
+            }
+        }
+
+        let nextChannel = this.channelId;
+        for (let i = 0; i < this.maxChannels; i++) {
+            if (this.openSockets[nextChannel] === undefined) {
+                this.channelId = (nextChannel + 1) % this.maxChannels;
+                return nextChannel;
+            }
+            nextChannel = (nextChannel + 1) % this.maxChannels;
+        }
+
+        return undefined;
     }
 
     _createSock(opts = {}) {
@@ -266,11 +305,16 @@ class WebSocketTransport extends EventEmitter {
                 }
             }
 
-            this._sendMessage(WebSocketTransport.MESSAGE_CONACK, fd, undefined, () => {
-                const sock = this._createSock({fd: fd});
-                this.openSockets[fd] = sock;
-                callback(sock);
-            });
+            if (Object.keys(this.openSockets).length < this.maxChannels) {
+                this._sendMessage(WebSocketTransport.MESSAGE_CONACK, fd, undefined, () => {
+                    const sock = this._createSock({fd: fd});
+                    this.openSockets[fd] = sock;
+                    callback(sock);
+                });
+            } else {
+                this.logger.debug(`connection attempt on fd=${fd} rejected, at limit (${this.maxChannels})`);
+                this._sendMessage(WebSocketTransport.MESSAGE_FIN, fd, undefined, () => {});
+            }
         });
     }
 
@@ -335,7 +379,7 @@ class WebSocketTransportSocket extends Duplex {
 
     connect(opts = {}, cb = undefined) {
         if (this.state === WebSocketTransportSocket.CONNECTING) {
-            cb(new Error("inprogress"));
+            cb(new CustomError(EINPROGRESS, `connection already in progress`));
             return;
         }
         this.cork();
@@ -371,6 +415,7 @@ class WebSocketTransportSocket extends Duplex {
     }
 
     _close(err) {
+        this.logger.isTraceEnabled() && this.logger.trace(`_close fd=${this.fd} state=${this.state} err=${err}`);
         if (err) {
             this.emit('error', err);
         }
@@ -379,7 +424,6 @@ class WebSocketTransportSocket extends Duplex {
         this.state = WebSocketTransportSocket.ENDED;
         this.wasFd = this.fd;
         this.fd = undefined;
-        this.logger.isTraceEnabled() && this.logger.trace(`_close fd=${this.fd} state=${this.state} err=${err}`);
     }
 
     destroy(error = undefined) {
