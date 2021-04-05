@@ -3,8 +3,6 @@ import HTTPParser from 'http-parser-js';
 import { URL } from 'url';
 import { Logger } from './logger.js';
 
-const httpParser = new HTTPParser.HTTPParser();
-
 class HttpTransformer extends stream.Transform {
 
     constructor(upstreamUrl, downstreamUrl, rewriteHeaders = [], replaceHeaders = {}) {
@@ -18,18 +16,16 @@ class HttpTransformer extends stream.Transform {
             this.downstreamHost = `${this.downstreamUrl.host}${this.downstreamUrl.port ? `:${this.downstreamUrl.port}` : ''}`;
         } catch {}
         this.logger = Logger('http-transformer');
-    }
 
-    _transform(chunk, encoding, callback) {
-        const self = this;
-        httpParser.initialize(HTTPParser.HTTPParser.REQUEST);
+        const httpParser = this.httpParser = new HTTPParser.HTTPParser();
+        this.httpParser.initialize(HTTPParser.HTTPParser.REQUEST);
         httpParser.onHeadersComplete = (info) => {
             this.logger.isTraceEnabled() &&
                 this.logger.trace(`HTTP request: ${info.method} ${info.url} HTTP/${info.versionMajor}.${info.versionMinor}`);
-            self.push(`${info.method} ${info.url} HTTP/${info.versionMajor}.${info.versionMinor}\r\n`);
+            this.push(`${info.method} ${info.url} HTTP/${info.versionMajor}.${info.versionMinor}\r\n`);
             const headers = info.headers;
             for (let i = 0; i < headers.length; i += 2) {
-                const name = headers[i];
+                const name = headers[i].toLowerCase();
                 let value = headers[i+1];
                 if (this.rewriteHeaders.includes(name)) {
                     if (value.toLowerCase().startsWith('http')) {
@@ -46,28 +42,32 @@ class HttpTransformer extends stream.Transform {
                     } else {
                         value = this.upstreamHost;
                     }
-                } else if (self.replaceHeaders[name] !== undefined) {
-                    value = self.replaceHeaders[name].length > 0 ? self.replaceHeaders[name] : undefined;
+                } else if (this.replaceHeaders[name] !== undefined) {
+                    value = this.replaceHeaders[name].length > 0 ? this.replaceHeaders[name] : undefined;
                 }
 
                 if (value) {
                     this.logger.isTraceEnabled() && this.logger.trace(`  ${name}: ${value}`);
-                    self.push(`${name}: ${value}\r\n`);
+                    this.push(`${headers[i]}: ${value}\r\n`);
                 }
             }
-            self.push('\r\n');
+            this.push('\r\n');
         }
         httpParser.onBody = (body, start, len) => {
-            self.push(body);
+            this.push(body);
+            httpParser.nextRequest();
         }
-        httpParser.onMessageComplete = callback;
 
-        if (httpParser.execute(chunk) < 0) {
+        this.logger.debug(`HttpTransformer upstreamUrl=${upstreamUrl}, downstreamUrl=${downstreamUrl}`);
+    }
+
+    _transform(chunk, encoding, callback) {
+        if (this.httpParser.execute(chunk) < 0) {
             this.push(chunk);
             callback();
             return;
         }
-        httpParser.finish();
+        callback();
     }
 }
 
