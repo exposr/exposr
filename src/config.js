@@ -17,9 +17,9 @@ const args = yargs
     })
     .demandOption('server')
     .option('tunnel-id', {
-        alias: 'i',
+        alias: 'n',
         type: 'string',
-        description: 'Tunnel ID, name of tunnel'
+        description: 'Tunnel name/identifier'
     })
     .option('insecure', {
         alias: 'k',
