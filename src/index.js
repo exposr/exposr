@@ -1,82 +1,10 @@
-import yargs from 'yargs';
-import { URL } from 'url';
 import hri from 'human-readable-ids';
+import Config from './config.js';
 import HttpTransformer from './http-transformer.js';
 import { Tunnel, Errors as TunnelErrors } from './tunnel.js';
 import { TunnelManager, Errors as TunnelManagerErrors } from './tunnel-manager.js';
 
-const parseUrl = (url) => {
-    try {
-        return new URL(url);
-    } catch (err) {
-        console.log(err.message);
-        process.exit(-1);
-    }
-};
-
-const argv = yargs.command('tunnel <upstream-url>', '', (yargs) => {
-    yargs
-        .positional('upstream-url', {
-            describe: 'Upstream target URL'
-        })
-        .coerce('upstream-url', (opt) => {
-            return parseUrl(opt);
-        })
-  }, (argv) => {
-    if (argv.verbose) {
-        console.info('Establish tunnel to upstream-url');
-    }
-  })
-  .option('server', {
-    alias: 's',
-    type: 'string',
-    description: 'Tunnel server endpoint'
-  })
-  .coerce('server', (opt) => {
-      return parseUrl(opt);
-  })
-  .demandOption('server')
-  .option('tunnel-id', {
-      alias: 'i',
-      type: 'string',
-      description: 'Tunnel ID, name of tunnel'
-  })
-  .option('insecure', {
-      alias: 'k',
-      type: 'boolean',
-      description: 'Skip upstream TLS certificate verification',
-      default: false,
-  })
-  .option('http-header-replace', {
-    alias: 'H',
-    type: 'string',
-    description: 'Set HTTP header in upstream request'
-  })
-  .coerce('http-header-replace', (opt) => {
-    const httpHeaders = {};
-    const httpHeaderArgs = opt || [];
-    (httpHeaderArgs instanceof Array ? httpHeaderArgs : [httpHeaderArgs]).forEach((v) => {
-        const kv = v.split(/:(.*)/).map((x) => x.trim())
-        if (kv.length === 3) {
-            httpHeaders[kv[0].toLowerCase()] = kv[1];
-        }
-    })
-    return Object.keys(httpHeaders).length > 0 ? httpHeaders : undefined;
-  })
-  .option('http-header-rewrite', {
-    alias: 'R',
-    type: 'string',
-    description: 'Headers to rewrite URLs in for upstream requests'
-  })
-  .coerce('http-header-rewrite', (opt) => {
-      if (opt === undefined) {
-          return [];
-      }
-      return opt instanceof Array ? opt : [opt];
-  })
-  .argv
-
-const tunnelManager = new TunnelManager(argv['server']);
+const tunnelManager = new TunnelManager(Config.get('server'));
 
 const createAndEstablish = async (ctx) => {
     const opts = {
@@ -127,23 +55,23 @@ const createAndEstablish = async (ctx) => {
     });
 };
 
-const rewriteHeaders = argv['http-header-rewrite'] || [];
-const replaceHeaders = argv['http-header-replace'] || {};
+const rewriteHeaders = Config.get('http-header-rewrite') || [];
+const replaceHeaders = Config.get('http-header-replace') || {};
 const transformEnabled = rewriteHeaders.length > 0 || Object.keys(replaceHeaders).length > 0;
 const transformerStream = () => {
     if (transformEnabled) {
-        return new HttpTransformer(argv['upstream-url'], rewriteHeaders, replaceHeaders)
+        return new HttpTransformer(Config.get('upstream-url'), rewriteHeaders, replaceHeaders)
     }
 }
 
 export default () => {
-    if (argv._[0] === 'tunnel') {
+    if (Config.get('_')[0] === 'tunnel') {
         (async () => {
             const ctx = {
                 transformerStream: transformerStream,
-                upstream: argv['upstream-url'],
-                tunnelId: argv['tunnel-id'] || hri.hri.random(),
-                allowInsecure: argv['insecure'],
+                upstream: Config.get('upstream-url'),
+                tunnelId: Config.get('tunnel-id') || hri.hri.random(),
+                allowInsecure: Config.get('insecure'),
                 established: false
             };
             console.log(`Allocating tunnel '${ctx.tunnelId}'`);
