@@ -17,7 +17,6 @@ class UpstreamConnector {
         this.tls = this.protocol === 'tls' || this.protocol === 'https' || this.protocol === 'wss';
         this.port = url.port == '' ? protocolInfo.port : url.port;
         this.serverName = !net.isIP(this.url.hostname) ? this.url.hostname : undefined;
-        this.connection;
     }
 
     _connect_tls(address, callback) {
