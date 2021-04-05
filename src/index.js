@@ -1,9 +1,11 @@
 import hri from 'human-readable-ids';
 import Config from './config.js';
+import { Logger } from './logger.js';
 import HttpTransformer from './http-transformer.js';
 import { Tunnel, Errors as TunnelErrors } from './tunnel.js';
 import { TunnelManager, Errors as TunnelManagerErrors } from './tunnel-manager.js';
 
+const logger = Logger();
 const tunnelManager = new TunnelManager(Config.get('server'));
 
 const createAndEstablish = async (ctx) => {
@@ -13,14 +15,14 @@ const createAndEstablish = async (ctx) => {
     };
     const tunnel = new Tunnel(ctx.upstream, opts);
     tunnel.on('open', (endpoint) => {
-        console.log(`Tunnel established: ${ctx.tunnelConfig.ingress.http.url} <> ${ctx.upstream}`);
+        logger.info(`Tunnel established: ${ctx.tunnelConfig.ingress.http.url} <> ${ctx.upstream}`);
         ctx.established = true;
     });
     tunnel.on('close', (endpoint, wasEstablished) => {
         ctx.established = false;
         ctx.wasEstablished = wasEstablished;
         wasEstablished &&
-            console.log("Tunnel connection lost, re-connecting");
+            logger.info("Tunnel connection lost, re-connecting");
         setTimeout(() => {
             createAndEstablish(ctx);
         }, wasEstablished ? 0 : 1000);
@@ -28,24 +30,24 @@ const createAndEstablish = async (ctx) => {
     tunnel.on('error', (err) => {
         if (!ctx.lastTunnelErr || ctx.lastTunnelErr.code != err.code) {
             if (!ctx.established) {
-                console.log(`Could not establish tunnel: ${err.message}`);
+                logger.error(`Could not establish tunnel: ${err.message}`);
             } else {
-                console.log(`Tunnel request failed: ${err.message}`);
+                logger.error(`Tunnel request failed: ${err.message}`);
             }
         }
         ctx.lastTunnelErr = err;
     });
 
     tunnelManager.create(ctx.tunnelId).then((tunnelConfig) => {
-        console.log(`Tunnel '${ctx.tunnelId}' allocated, establishing tunnel...`)
+        logger.info(`Tunnel '${ctx.tunnelId}' allocated, establishing tunnel...`)
         ctx.tunnelConfig = tunnelConfig;
         tunnel.connect(tunnelConfig.endpoints.ws.url);
     }).catch((err) => {
         if (!ctx.lastTunnelManagerErr || ctx.lastTunnelManagerErr.code != err.code) {
-            console.log(`Failed to allocate tunnel '${ctx.tunnelId}': ${err.message}, retrying`);
+            logger.error(`Failed to allocate tunnel '${ctx.tunnelId}': ${err.message}, retrying`);
         }
         if (err.code === TunnelManagerErrors.ERR_NOT_AUTHORIZED) {
-            console.log(`Not authorized to allocate tunnel '${ctx.tunnelId}`);
+            logger.error(`Not authorized to allocate tunnel '${ctx.tunnelId}`);
         } else {
             setTimeout(() => {
                 createAndEstablish(ctx);
@@ -74,7 +76,7 @@ export default () => {
                 allowInsecure: Config.get('insecure'),
                 established: false
             };
-            console.log(`Allocating tunnel '${ctx.tunnelId}'`);
+            logger.info(`Allocating tunnel '${ctx.tunnelId}'`);
             createAndEstablish(ctx);
         })();
     }

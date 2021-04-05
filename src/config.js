@@ -33,6 +33,11 @@ const args = yargs
         choices: ['all', 'trace', 'debug', 'info', 'warn', 'error', 'fatal', 'off'],
 
     })
+    .option('log-format', {
+        type: 'string',
+        default: 'basic',
+        choices: ['basic', 'json'],
+    })
     .command('tunnel <upstream-url>', '', (yargs) => {
         yargs.positional('upstream-url', {
                 describe: 'Upstream target URL'
