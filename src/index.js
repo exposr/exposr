@@ -10,7 +10,7 @@ const tunnelManager = new TunnelManager(Config.get('server'));
 
 const createAndEstablish = async (ctx) => {
     const opts = {
-        transformerStream: ctx.transformerStream,
+        transformerStream: () => { return ctx.transformerStream(ctx.tunnelConfig.ingress.http.url) },
         allowInsecure: ctx.allowInsecure,
     };
     const tunnel = new Tunnel(ctx.upstream, opts);
@@ -59,15 +59,21 @@ const createAndEstablish = async (ctx) => {
 
 const rewriteHeaders = Config.get('http-header-rewrite') || [];
 const replaceHeaders = Config.get('http-header-replace') || {};
-const transformEnabled = rewriteHeaders.length > 0 || Object.keys(replaceHeaders).length > 0;
-const transformerStream = () => {
+const transformEnabled = Config.get('http-mode') && (rewriteHeaders.length > 0 || Object.keys(replaceHeaders).length > 0);
+const transformerStream = (downstream) => {
     if (transformEnabled) {
-        return new HttpTransformer(Config.get('upstream-url'), rewriteHeaders, replaceHeaders)
+        return new HttpTransformer(Config.get('upstream-url'), downstream, rewriteHeaders, replaceHeaders)
     }
 }
 
 export default () => {
     if (Config.get('_')[0] === 'tunnel') {
+        logger.info(`Upstream target: ${Config.get('upstream-url')}`);
+        logger.info(`HTTP mode: ${Config.get('http-mode') ? 'enabled': 'disabled'}`);
+        if (Config.get('http-mode')) {
+            logger.info(`HTTP header rewrite: ${rewriteHeaders.join(", ")}`);
+            logger.info(`HTTP header replace: ${Object.entries(replaceHeaders).map(kv => `${kv[0]}=${kv[1]}`).join(", ") }`);
+        }
         (async () => {
             const ctx = {
                 transformerStream: transformerStream,

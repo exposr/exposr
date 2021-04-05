@@ -56,6 +56,10 @@ const args = yargs
             }
         }
     )
+    .option('http-mode', {
+        type: 'boolean',
+        description: 'Enable HTTP mode (enabled for HTTP upstream, unless disabled)'
+    })
     .option('http-header-replace', {
         alias: 'H',
         type: 'string',
@@ -75,7 +79,8 @@ const args = yargs
     .option('http-header-rewrite', {
         alias: 'R',
         type: 'string',
-        description: 'Headers to rewrite URLs in for upstream requests'
+        description: 'Headers to rewrite URLs in for upstream requests',
+        default: ['host', 'referer', 'origin'],
     })
     .coerce('http-header-rewrite', (opt) => {
         if (opt === undefined) {
@@ -87,6 +92,11 @@ const args = yargs
 class Config {
     constructor() {
         this._config = args.argv;
+
+        if (this._config['http-mode'] === undefined) {
+            const proto = this._config['upstream-url'].protocol;
+            this._config['http-mode'] = proto == 'http:' || proto == 'https:';
+        }
     }
 
     get(key) {
