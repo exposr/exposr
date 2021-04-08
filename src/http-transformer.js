@@ -58,7 +58,7 @@ class HttpTransformer extends stream.Transform {
             httpParser.nextRequest();
         }
 
-        this.logger.debug(`HttpTransformer upstreamUrl=${upstreamUrl}, downstreamUrl=${downstreamUrl}`);
+        this.logger.trace(`HttpTransformer upstreamUrl=${upstreamUrl}, downstreamUrl=${downstreamUrl}`);
     }
 
     _transform(chunk, encoding, callback) {
