@@ -10,10 +10,9 @@ class HttpTransformer extends stream.Transform {
         this.replaceHeaders = replaceHeaders;
         this.rewriteHeaders = rewriteHeaders;
         this.upstreamUrl = upstreamUrl;
-        this.upstreamHost = `${this.upstreamUrl.host}${this.upstreamUrl.port ? `:${this.upstreamUrl.port}` : ''}`;
+        this.upstreamHost = this.upstreamUrl.host;
         try {
             this.downstreamUrl = new URL(downstreamUrl);
-            this.downstreamHost = `${this.downstreamUrl.host}${this.downstreamUrl.port ? `:${this.downstreamUrl.port}` : ''}`;
         } catch {}
         this.logger = Logger('http-transformer');
 
