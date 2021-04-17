@@ -1,4 +1,4 @@
-import net from 'net';
+import net, { Socket } from 'net';
 import tls from 'tls';
 import portNumbers from 'port-numbers';
 import dnscache from 'dnscache';
@@ -19,11 +19,9 @@ class UpstreamConnector {
         this.serverName = !net.isIP(this.url.hostname) ? this.url.hostname : undefined;
     }
 
-    _connect_tls(address, callback) {
+    _connect_tls(sock, address, callback) {
         const conOpts = {
-            host: address,
-            port: this.port,
-            setDefaultEncoding: 'binary'
+            socket: sock,
         };
 
         if (this.serverName) {
@@ -35,23 +33,30 @@ class UpstreamConnector {
             conOpts.rejectUnauthorized = false;
         }
 
-        const connection = tls.connect(conOpts, () => {
-            callback(undefined, connection);
-        });
+        this._connect_net(sock, address, (err, netSocket) => {
+            if (err) {
+                return callback(err);
+            }
 
-        connection.on('error', (err) => {
-            callback(err);
+            const connection = tls.connect(conOpts, () => {
+                callback(undefined, connection);
+            });
+
+            connection.on('error', (err) => {
+                console.log(err);
+                callback(err);
+            });
         });
     }
 
-    _connect_net(address, callback) {
+    _connect_net(sock, address, callback) {
         const conOpts = {
             host: address,
             port: this.port,
             setDefaultEncoding: 'binary'
         };
 
-        const connection = net.connect(conOpts);
+        const connection = sock.connect(conOpts);
 
         connection.once('ready', () => {
             callback(undefined, connection);
@@ -62,23 +67,26 @@ class UpstreamConnector {
         });
     }
 
-    _connect(address, callback) {
+    _connect(sock, address, callback) {
         if (this.tls) {
-            this._connect_tls(address, callback);
+            this._connect_tls(sock, address, callback);
         } else {
-            this._connect_net(address, callback);
+            this._connect_net(sock, address, callback);
         }
     }
 
     connect(callback) {
-        const self = this;
+        const sock = new Socket();
+
         this.dnscache.lookup(this.url.hostname, (err, address) => {
             if (err) {
                 callback(err);
             } else {
-                self._connect(address, callback);
+                this._connect(sock, address, callback);
             }
         });
+
+        return sock;
     }
 }
 

@@ -2,6 +2,9 @@ import { EventEmitter } from 'events';
 import WebSocket from 'ws';
 import UpstreamConnector from './upstream-connector.js';
 import WebSocketTransport from './transport/ws/ws-transport.js';
+import { Logger } from './logger.js';
+
+const logger = Logger("tunnel");
 
 export const Errors = {
     ERR_NOT_AUTHORIZED: -65536,
@@ -43,30 +46,34 @@ export class Tunnel extends EventEmitter {
                 socket: ws
             });
             transport.listen((sock) => {
-                this.upstreamConnector.connect((err, upstream) => {
+                logger.trace(`listen new sock paused=${sock.isPaused()}`);
+                const upstream = this.upstreamConnector.connect((err, upstreamSock) => {
                     if (err) {
                         sock.destroy();
                         upstream && upstream.destroy();
                         this.emit('error', err);
                         return;
                     }
-                    upstream.on('close', () => {
-                        sock.unpipe();
-                        sock.destroy();
-                    });
-
-                    sock.on('close', () => {
-                        upstream.unpipe();
-                        upstream.destroy();
-                    });
-
-                    let pipe = upstream.pipe(sock);
 
                     const transformerStream = this.opts.transformerStream();
+                    let pipe = upstreamSock.pipe(sock);
                     if (transformerStream) {
                         pipe = pipe.pipe(transformerStream);
                     }
-                    pipe.pipe(upstream);
+                    pipe.pipe(upstreamSock);
+
+                    logger.trace(`upstream connected paused=${sock.isPaused()}`);
+                    sock.accept();
+                });
+
+                upstream.once('close', () => {
+                    sock.unpipe();
+                    sock.destroy();
+                });
+
+                sock.once('close', () => {
+                    upstream.unpipe();
+                    upstream.destroy();
                 });
             });
 
