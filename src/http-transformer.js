@@ -15,6 +15,7 @@ class HttpTransformer extends stream.Transform {
             this.downstreamUrl = new URL(downstreamUrl);
         } catch {}
         this.logger = Logger('http-transformer');
+        this.enabled = true;
 
         const httpParser = this.httpParser = new HTTPParser.HTTPParser();
         this.httpParser.initialize(HTTPParser.HTTPParser.REQUEST);
@@ -46,27 +47,44 @@ class HttpTransformer extends stream.Transform {
                 }
 
                 if (value) {
-                    this.logger.isTraceEnabled() && this.logger.trace(`  ${name}: ${value}`);
+                    this.logger.isTraceEnabled() && this.logger.trace(`  ${headers[i]}: ${value}`);
                     this.push(`${headers[i]}: ${value}\r\n`);
+                }
+
+                if (name === 'connection' && value.toLowerCase() == 'upgrade') {
+                    this._upgrade = true;
                 }
             }
             this.push('\r\n');
         }
+
         httpParser.onBody = (body, start, len) => {
             this.push(body);
             httpParser.nextRequest();
         }
 
-        this.logger.trace(`HttpTransformer upstreamUrl=${upstreamUrl}, downstreamUrl=${downstreamUrl}`);
+        httpParser.onMessageComplete = () => {
+            if (this._upgrade) {
+                this.logger.trace(`upgrade request, disabling transformer`);
+                this.enabled = false;
+            }
+        };
+
+        this.logger.trace(`upstreamUrl=${upstreamUrl}, downstreamUrl=${downstreamUrl}`);
     }
 
     _transform(chunk, encoding, callback) {
-        if (this.httpParser.execute(chunk) < 0) {
+        if (!this.enabled) {
             this.push(chunk);
-            callback();
-            return;
+            return callback();
         }
-        callback();
+
+        if (this.httpParser.execute(chunk) >= 0) {
+            return callback();
+        } else {
+            this.push(chunk);
+            return callback();
+        }
     }
 }
 
