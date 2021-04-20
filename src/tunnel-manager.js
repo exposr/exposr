@@ -14,15 +14,23 @@ export class TunnelManager {
         this.baseUri = baseUri;
     }
 
-    async create(tunnelId = undefined) {
-        const method = tunnelId === undefined ? 'POST' : 'PUT';
-        const url = `${this.baseUri}v1/tunnel`.concat(tunnelId !== undefined ? `/${tunnelId}` : '');
+    async create(config = {}) {
+        const method = 'PUT';
+        const url = `${this.baseUri}v1/tunnel/${config.tunnelId}`;
 
         try {
             const response = await axios({
                 method,
                 url,
                 data: {
+                    ingress: {
+                        http: {
+                            enabled: config.httpMode,
+                        }
+                    },
+                    upstream: {
+                        url: config.upstream,
+                    }
                 }
             })
             if (response.status == 200 || response.status == 201) {

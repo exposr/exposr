@@ -38,7 +38,12 @@ const createAndEstablish = async (ctx) => {
         ctx.lastTunnelErr = err;
     });
 
-    tunnelManager.create(ctx.tunnelId).then((tunnelConfig) => {
+    const tunnelConfig = {
+        tunnelId: ctx.tunnelId,
+        upstream: ctx.upstream,
+        httpMode: Config.get('http-mode'),
+    };
+    tunnelManager.create(tunnelConfig).then((tunnelConfig) => {
         logger.info(`Tunnel '${ctx.tunnelId}' allocated, establishing tunnel...`)
         ctx.tunnelConfig = tunnelConfig;
         tunnel.connect(tunnelConfig.endpoints.ws.url);
