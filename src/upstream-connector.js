@@ -14,8 +14,8 @@ class UpstreamConnector {
         this.url = url;
         this.protocol = url.protocol.slice(0, -1);
         const protocolInfo = portNumbers.getPort(this.protocol);
-        this.tls = this.protocol === 'tls' || this.protocol === 'https' || this.protocol === 'wss';
-        this.port = url.port == '' ? protocolInfo.port : url.port;
+        this.tls = this.protocol === 'tcps' || this.protocol === 'tls' || this.protocol === 'https' || this.protocol === 'wss';
+        this.port = url.port == '' ? protocolInfo?.port : url.port;
         this.serverName = !net.isIP(this.url.hostname) ? this.url.hostname : undefined;
     }
 
