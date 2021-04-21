@@ -15,7 +15,12 @@ const createAndEstablish = async (ctx) => {
     };
     const tunnel = new Tunnel(ctx.upstream, opts);
     tunnel.on('open', (endpoint) => {
-        logger.info(`Tunnel established: ${ctx.tunnelConfig.ingress.http.url} <> ${ctx.upstream}`);
+        if (ctx.tunnelConfig.ingress?.http?.url) {
+            logger.info(`Tunnel established: ${ctx.tunnelConfig.ingress.http.url} <> ${ctx.upstream}`);
+        } else {
+            logger.warn("Tunnel established, but no ingress points returned by server");
+        }
+
         ctx.established = true;
     });
     tunnel.on('close', (endpoint, wasEstablished) => {
@@ -46,7 +51,12 @@ const createAndEstablish = async (ctx) => {
     tunnelManager.create(tunnelConfig).then((tunnelConfig) => {
         logger.info(`Tunnel '${ctx.tunnelId}' allocated, establishing tunnel...`)
         ctx.tunnelConfig = tunnelConfig;
-        tunnel.connect(tunnelConfig.endpoints.ws.url);
+        if (tunnelConfig.endpoints?.ws?.url != undefined) {
+            tunnel.connect(tunnelConfig.endpoints.ws.url);
+        } else {
+            logger.error(`No websocket connection endpoint returned from server`);
+            logger.debug(`Endpoints: ${JSON.stringify(tunnelConfig.endpoints)}`);
+        }
     }).catch((err) => {
         if (!ctx.lastTunnelManagerErr || ctx.lastTunnelManagerErr.code != err.code) {
             logger.error(`Failed to allocate tunnel '${ctx.tunnelId}': ${err.message}, retrying`);
