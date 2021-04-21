@@ -41,7 +41,7 @@ const createAndEstablish = async (ctx) => {
     const tunnelConfig = {
         tunnelId: ctx.tunnelId,
         upstream: ctx.upstream,
-        httpMode: Config.get('http-mode'),
+        ingressHttp: Config.get('ingress-http'),
     };
     tunnelManager.create(tunnelConfig).then((tunnelConfig) => {
         logger.info(`Tunnel '${ctx.tunnelId}' allocated, establishing tunnel...`)
@@ -74,7 +74,7 @@ const transformerStream = (downstream) => {
 export default () => {
     if (Config.get('_')[0] === 'tunnel') {
         logger.info(`Upstream target: ${Config.get('upstream-url')}`);
-        logger.info(`HTTP mode: ${Config.get('http-mode') ? 'enabled': 'disabled'}`);
+        logger.info(`Local HTTP parsing: ${Config.get('http-mode') ? 'enabled': 'disabled'}`);
         if (Config.get('http-mode')) {
             logger.info(`HTTP header rewrite: ${rewriteHeaders.join(", ")}`);
             logger.info(`HTTP header replace: ${Object.entries(replaceHeaders).map(kv => `${kv[0]}=${kv[1]}`).join(", ") }`);

@@ -56,9 +56,14 @@ const args = yargs
             }
         }
     )
+    .option('ingress-http', {
+        type: 'boolean',
+        description: 'Request HTTP ingress from tunnel server (automatic based on upstream URL)'
+    })
     .option('http-mode', {
         type: 'boolean',
-        description: 'Enable HTTP mode (enabled for HTTP upstream, unless disabled)'
+        default: false,
+        description: 'Enable local HTTP parsing mode'
     })
     .option('http-header-replace', {
         alias: 'H',
@@ -93,9 +98,9 @@ class Config {
     constructor() {
         this._config = args.argv;
 
-        if (this._config['http-mode'] === undefined) {
+        if (this._config['ingress-http'] === undefined) {
             const proto = this._config['upstream-url'].protocol;
-            this._config['http-mode'] = proto == 'http:' || proto == 'https:';
+            this._config['ingress-http'] = proto == 'http:' || proto == 'https:';
         }
     }
 

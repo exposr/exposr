@@ -25,11 +25,11 @@ export class TunnelManager {
                 data: {
                     ingress: {
                         http: {
-                            enabled: config.httpMode,
+                            enabled: config.ingressHttp,
                         }
                     },
                     upstream: {
-                        url: config.upstream,
+                        url: config.upstream.href,
                     }
                 }
             })
