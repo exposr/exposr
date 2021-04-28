@@ -2,6 +2,41 @@ import yargs from 'yargs';
 import { URL } from 'url';
 
 const args = yargs
+    .command('tunnel <upstream-url> [tunnel-id]', 'Create and connect tunnel', (yargs) => {
+        yargs.positional('upstream-url', {
+            describe: 'Target URL to connect tunnel to'
+        }),
+        yargs.positional('tunnel-id', {
+            describe: 'Tunnel ID to create, random name if not specified'
+        }),
+        yargs.example([
+            ['$0 tunnel http://example.com', 'Create a random tunnel and connect to example.com'],
+            ['$0 tunnel https://example.com example', 'Create tunnel example and connect to example.com over https'],
+        ])
+    })
+    .command('create-account', 'Create account at tunnel server', (yargs) => { })
+    .command('create-tunnel [tunnel-id]', 'Create tunnel', (yargs) => {
+        yargs.positional('tunnel-id', {
+            describe: 'Tunnel ID to create, if no tunnel id is given a random tunnel is allocated'
+        })
+    })
+    .command('delete-tunnel <tunnel-id>', 'Delete existing tunnel', (yargs) => {
+        yargs.positional('tunnel-id', {
+            describe: 'Tunnel ID to delete'
+        })
+    })
+    .command('connect-tunnel <tunnel-id> <upstream-url>', 'Establish connection to existing tunnel', (yargs) => {
+        yargs.positional('tunnel-id', {
+            describe: 'Tunnel ID to connect to'
+        }),
+        yargs.positional('upstream-url', {
+            describe: 'Target URL to connect tunnel to'
+        }),
+        yargs.example([
+            ['$0 connect-tunnel example https://example.com', 'Connect tunnel example to https://example.com'],
+        ])
+    })
+    .demandCommand()
     .option('server', {
           alias: 's',
           type: 'string',
@@ -16,10 +51,10 @@ const args = yargs
         },
     })
     .demandOption('server')
-    .option('tunnel-id', {
-        alias: 'n',
+    .option('account', {
+        alias: 'a',
         type: 'string',
-        description: 'Tunnel name/identifier'
+        description: 'Account ID'
     })
     .option('insecure', {
         alias: 'k',
@@ -27,35 +62,6 @@ const args = yargs
         description: 'Skip upstream TLS certificate verification',
         default: false,
     })
-    .option('log-level', {
-        type: 'string',
-        default: 'info',
-        choices: ['all', 'trace', 'debug', 'info', 'warn', 'error', 'fatal', 'off'],
-
-    })
-    .option('log-format', {
-        type: 'string',
-        default: 'basic',
-        choices: ['basic', 'json'],
-    })
-    .command('tunnel <upstream-url>', '', (yargs) => {
-        yargs.positional('upstream-url', {
-                describe: 'Upstream target URL'
-            })
-            .coerce('upstream-url', (url) => {
-                try {
-                    return new URL(url);
-                } catch (err) {
-                    console.log(err.message);
-                    process.exit(-1);
-                }
-            })
-        }, (argv) => {
-            if (argv.verbose) {
-                console.info('Establish tunnel to upstream-url');
-            }
-        }
-    )
     .option('ingress-http', {
         type: 'boolean',
         description: 'Request HTTP ingress from tunnel server (automatic based on upstream URL)'
@@ -93,13 +99,32 @@ const args = yargs
         }
         return opt instanceof Array ? opt : [opt];
     })
+    .coerce('upstream-url', (url) => {
+        try {
+            return new URL(url);
+        } catch (err) {
+            console.log(err.message);
+            process.exit(-1);
+        }
+    })
+    .option('log-level', {
+        type: 'string',
+        default: 'info',
+        choices: ['all', 'trace', 'debug', 'info', 'warn', 'error', 'fatal', 'off'],
 
+    })
+    .option('log-format', {
+        type: 'string',
+        default: 'basic',
+        choices: ['basic', 'json'],
+    })
+    .wrap(110)
 class Config {
     constructor() {
         this._config = args.argv;
 
         if (this._config['ingress-http'] === undefined) {
-            const proto = this._config['upstream-url'].protocol;
+            const proto = this._config['upstream-url']?.protocol;
             this._config['ingress-http'] = proto == 'http:' || proto == 'https:';
         }
     }

@@ -1,7 +1,7 @@
 import stream from 'stream';
 import HTTPParser from 'http-parser-js';
 import { URL } from 'url';
-import { Logger } from './logger.js';
+import { Logger } from '../logger.js';
 
 class HttpTransformer extends stream.Transform {
 
