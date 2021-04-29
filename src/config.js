@@ -119,6 +119,7 @@ const args = yargs
         choices: ['basic', 'json'],
     })
     .wrap(110)
+    .scriptName('exposr')
 class Config {
     constructor() {
         this._config = args.argv;

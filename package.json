@@ -1,8 +1,8 @@
 {
   "name": "exposr",
   "version": "1.0.0",
-  "main": "index.js",
   "type": "module",
+  "main": "exposr",
   "author": "Fredrik Lindberg <fli@shapeshifter.se>",
   "license": "MIT",
   "dependencies": {
