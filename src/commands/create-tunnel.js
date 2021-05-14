@@ -15,7 +15,8 @@ export default async () => {
     const tunnelId = Config.get('tunnel-id') || hri.hri.random();
     if (await tunnelService.create(tunnelId)) {
         Logger.info(`Tunnel ${tunnelService.tunnelId} created`);
+        return true;
+    } else {
+        return false;
     }
-
-    return true;
 }
