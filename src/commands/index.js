@@ -3,6 +3,7 @@ import CreateAccount from './create-account.js';
 import CreateTunnel from './create-tunnel.js';
 import DeleteTunnel from './delete-tunnel.js';
 import ConnectTunnel from './connect-tunnel.js';
+import DisconnectTunnel from './disconnect-tunnel.js';
 import TunnelCommand from './tunnel.js';
 import TunnelInfo from './tunnel-info.js';
 
@@ -32,6 +33,9 @@ class Command {
                 break;
             case 'tunnel-info':
                 TunnelInfo();
+                break;
+            case 'disconnect-tunnel':
+                DisconnectTunnel();
                 break;
             default:
                 Logger.error(`No such command ${command}`);

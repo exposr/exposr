@@ -131,6 +131,32 @@ class TunnelService {
         }
         return false;
     }
+
+    async disconnect() {
+       const token = await new AccountService().refreshToken();
+        if (!token) {
+            return false;
+        }
+
+        try {
+            const response = await this.httpClient.post(`/${this.tunnelId}/disconnect`,
+            {},
+            {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+                validateStatus: (status) => {
+                    return status <= 204;
+                }
+            });
+            return response?.data?.result;
+        } catch (error) {
+            Logger.error(`Failed to disconnect tunnel ${this.tunnelId}: ${error.message}`);
+        }
+        return false;
+    }
+
+
 }
 
 export default TunnelService;

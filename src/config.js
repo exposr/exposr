@@ -36,6 +36,11 @@ const args = yargs
             ['$0 connect-tunnel example https://example.com', 'Connect tunnel example to https://example.com'],
         ])
     })
+    .command('disconnect-tunnel <tunnel-id>', 'Disconnect a connected tunnel', (yargs) => {
+        yargs.positional('tunnel-id', {
+            describe: 'Tunnel ID to disconnect'
+        })
+    })
     .command('tunnel-info <tunnel-id>', 'Read state of existing tunnel', (yargs) => {
         yargs.positional('tunnel-id', {
             describe: 'Tunnel ID to read'
