@@ -49,7 +49,7 @@ const establishTunnel = async (ctx) => {
     });
 
     const tunnelService = new TunnelService();
-    const config = await tunnelService.config(ctx.refreshConfig);
+    const config = await tunnelService.read(ctx.refreshConfig);
     if (config) {
         ctx.config = config;
     }

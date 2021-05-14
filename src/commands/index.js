@@ -4,6 +4,7 @@ import CreateTunnel from './create-tunnel.js';
 import DeleteTunnel from './delete-tunnel.js';
 import ConnectTunnel from './connect-tunnel.js';
 import TunnelCommand from './tunnel.js';
+import TunnelInfo from './tunnel-info.js';
 
 class Command {
     constructor() {
@@ -28,6 +29,9 @@ class Command {
                 break;
             case 'tunnel':
                 TunnelCommand();
+                break;
+            case 'tunnel-info':
+                TunnelInfo();
                 break;
             default:
                 Logger.error(`No such command ${command}`);

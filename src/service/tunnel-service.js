@@ -18,12 +18,12 @@ class TunnelService {
         });
 
         this.tunnelId = Config.get('tunnel-id');
-        this.tunnelConfig = undefined;
+        this.tunnelData = undefined;
     }
 
-    async config(force = false) {
-        if (this.tunnelConfig && !force) {
-            return this.tunnelConfig;
+    async read(force = false) {
+        if (this.tunnelData && !force) {
+            return this.tunnelData;
         }
 
         const token = await new AccountService().refreshToken();
@@ -41,8 +41,8 @@ class TunnelService {
                     return status <= 201;
                 }
             });
-            this.tunnelConfig = response.data;
-            return this.tunnelConfig;
+            this.tunnelData = response.data;
+            return this.tunnelData;
         } catch (error) {
             Logger.error(`Failed to read tunnel configuration: ${error.message}`);
         }
@@ -73,7 +73,7 @@ class TunnelService {
                     return status <= 201;
                 }
             });
-            this.tunnelConfig = response.data;
+            this.tunnelData = response.data;
             this.tunnelId = tunnelId;
             return true;
         } catch (error) {
@@ -98,7 +98,7 @@ class TunnelService {
                     return status <= 201;
                 }
             });
-            this.tunnelConfig = response.data;
+            this.tunnelData = response.data;
             return true;
         } catch(error) {
             Logger.error(`Failed to update tunnel ${this.tunnelId}: ${error.message}`);
@@ -123,7 +123,7 @@ class TunnelService {
                     return status <= 204;
                 }
             });
-            this.tunnelConfig = undefined;
+            this.tunnelData = undefined;
             this.tunnelId = undefined;
             return true;
         } catch (error) {
