@@ -29,6 +29,7 @@ export default async () => {
         tunnel?.connection?.alive_at && Logger.info(`Alive at: ${tunnel.connection.alive_at}`);
     }
     tunnel.connection.disconnected_at && Logger.info(`Disconnected at: ${tunnel.connection.disconnected_at}`);
+    Logger.info(`Created at: ${tunnel.created_at}`);
 
     return true;
 }
