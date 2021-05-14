@@ -10,7 +10,7 @@ export default async () => {
     if (accountService.account?.account_id) {
         Logger.info(`Using account ${accountService.account.account_id}`);
     } else if (!await CreateAccount()) {
-            return;
+        return;
     }
     if (!await CreateTunnel()) {
         return;
