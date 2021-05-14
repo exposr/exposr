@@ -14,6 +14,16 @@ const establishTunnel = async (ctx) => {
         allowInsecure: ctx.allowInsecure,
     };
 
+    const reconnect = (ctx) => {
+        if (ctx.timer) {
+            return;
+        }
+        ctx.timer = setTimeout(() => {
+            ctx.timer = undefined;
+            establishTunnel(ctx);
+        }, ctx.wasEstablished ? 0 : 1000);
+    }
+
     const tunnel = ctx.tunnel = new Tunnel(ctx.upstream, opts);
     tunnel.on('open', (endpoint) => {
         if (ctx.config.ingress?.http?.url) {
@@ -22,7 +32,8 @@ const establishTunnel = async (ctx) => {
             Logger.warn("Tunnel established, but no ingress points returned by server");
         }
         ctx.established = true;
-        ctx.refreshConfig = false;
+        ctx.refreshConfig = true;
+        ctx.lastTunnelErr = undefined;
     });
     tunnel.on('close', (endpoint, wasEstablished) => {
         ctx.established = false;
@@ -32,9 +43,7 @@ const establishTunnel = async (ctx) => {
         }
         wasEstablished &&
             Logger.info("Tunnel connection lost, re-connecting");
-        ctx.timer = setTimeout(() => {
-            establishTunnel(ctx);
-        }, wasEstablished ? 0 : 1000);
+        reconnect(ctx);
     });
     tunnel.on('error', (err) => {
         if (!ctx.lastTunnelErr || ctx.lastTunnelErr.code != err.code) {
@@ -44,6 +53,9 @@ const establishTunnel = async (ctx) => {
                 Logger.error(`Tunnel request failed: ${err.message}`);
             }
         }
+        if (!ctx.established) {
+            reconnect(ctx);
+        }
         ctx.lastTunnelErr = err;
         ctx.refreshConfig = true;
     });
@@ -52,6 +64,7 @@ const establishTunnel = async (ctx) => {
     const config = await tunnelService.read(ctx.refreshConfig);
     if (config) {
         ctx.config = config;
+        ctx.refreshConfig = false;
     }
 
     if (ctx.config?.endpoints?.ws?.url == undefined) {
@@ -62,7 +75,7 @@ const establishTunnel = async (ctx) => {
 
     Logger.debug(`Connecting to ${ctx.config.endpoints.ws.url}`);
     tunnel.connect(ctx.config.endpoints.ws.url);
-    return tunnel;
+    return;
 };
 
 export default async () => {
