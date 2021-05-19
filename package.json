@@ -1,6 +1,6 @@
 {
   "name": "exposr",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "type": "module",
   "main": "exposr",
   "author": "Fredrik Lindberg <fli@shapeshifter.se>",
@@ -14,5 +14,13 @@
     "port-numbers": "^6.0.0",
     "ws": "^7.3.1",
     "yargs": "^15.4.1"
+  },
+  "devDependencies": {
+    "standard-version": "^9.3.0"
+  },
+  "scripts": {
+    "prepack": "scripts/build-env.sh > build.env",
+    "postpack": "rm build.env",
+    "release": "standard-version"
   }
 }
