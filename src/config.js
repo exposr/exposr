@@ -1,7 +1,20 @@
 import yargs from 'yargs';
 import { URL } from 'url';
+import Version from './version.js';
 
 const args = yargs
+    .version(false)
+    .option('version', {
+        alias: 'v',
+        describe: 'Show version information',
+        coerce: () => {
+            const version = Version.version;
+            console.log(`version: ${version.version} (pkg ${version.package})`);
+            version?.build?.commit && console.log(`commit: ${version?.build?.commit}/${version?.build?.branch}`);
+            version?.build?.date && console.log(`timestamp: ${version.build.date}`);
+            process.exit(0);
+        }
+    })
     .command('tunnel <upstream-url> [tunnel-id]', 'Create and connect tunnel', (yargs) => {
         yargs.positional('upstream-url', {
             describe: 'Target URL to connect tunnel to'
