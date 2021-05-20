@@ -5,6 +5,14 @@
   "main": "exposr",
   "author": "Fredrik Lindberg <fli@shapeshifter.se>",
   "license": "MIT",
+  "files": [
+    "exposr",
+    "src",
+    "README.md",
+    "LICENSE",
+    "yarn.lock",
+    "build.env"
+  ],
   "dependencies": {
     "axios": "^0.21.1",
     "dnscache": "^1.0.2",
