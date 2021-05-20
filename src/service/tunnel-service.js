@@ -1,6 +1,7 @@
 import axios from 'axios';
 import Config from '../config.js';
 import Logger from '../logger.js';
+import Version from '../version.js';
 import AccountService from './account-service.js';
 
 class TunnelService {
@@ -14,7 +15,10 @@ class TunnelService {
         baseUrl.pathname += 'v1/tunnel';
         this.httpClient = axios.create({
             baseURL: baseUrl.href,
-            timeout: 5000
+            timeout: 5000,
+            headers: {
+                'User-Agent': Version.useragent,
+            }
         });
 
         this.tunnelId = Config.get('tunnel-id');

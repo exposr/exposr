@@ -3,6 +3,8 @@ import fs from 'fs';
 
 class Version {
 
+    static useragent = `exposr-cli/${Version.getVersion().version}`;
+
     static version = Version.getVersion();
 
     static getVersion() {

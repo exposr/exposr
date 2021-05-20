@@ -1,6 +1,7 @@
 import axios from 'axios';
 import Config from '../config.js';
 import Logger from '../logger.js';
+import Version from '../version.js';
 
 class AccountService {
     constructor() {
@@ -13,7 +14,10 @@ class AccountService {
         baseUrl.pathname += 'v1/account';
         this.httpClient = axios.create({
             baseURL: baseUrl.href,
-            timeout: 5000
+            timeout: 5000,
+            headers: {
+                'User-Agent': Version.useragent,
+            }
         });
 
         this.account = {
