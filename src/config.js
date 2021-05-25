@@ -3,6 +3,7 @@ import { URL } from 'url';
 import Version from './version.js';
 
 const args = yargs
+    .env("EXPOSR")
     .version(false)
     .option('version', {
         alias: 'v',
