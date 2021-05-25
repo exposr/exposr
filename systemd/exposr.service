@@ -1,0 +1,24 @@
+# Sample systemd unit file for the exposr-client
+[Unit]
+After=network-online.target
+Wants=network-online.target
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+# Environment=TUNNEL_NAME=mytunnel # Optional name of tunnel
+Environment=TUNNEL_TARGET=http://example.com
+Environment=EXPOSR_ACCOUNT=ABCDEFGIJKLMNOPQ
+Environment=EXPOSR_SERVER=https://api.example.com
+Environment=VERSION=unstable
+Restart=always
+RestartSec=10
+ExecStartPre=-/usr/bin/docker kill %n
+ExecStartPre=-/usr/bin/docker rm %n
+ExecStartPre=-/usr/bin/docker pull exposr/exposr:${VERSION}
+ExecStart=/usr/bin/docker run --rm --name %n \
+  -t \
+  exposr/exposr:${VERSION} \
+  --ingress-http tunnel ${TUNNEL_TARGET} ${TUNNEL_NAME} 
+ExecStop=/usr/bin/docker stop -t 2 %n
