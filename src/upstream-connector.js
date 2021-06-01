@@ -43,7 +43,6 @@ class UpstreamConnector {
             });
 
             connection.on('error', (err) => {
-                console.log(err);
                 callback(err);
             });
         });

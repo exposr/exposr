@@ -1,6 +1,12 @@
 import axios from 'axios';
 import Config from '../config.js';
-import Logger from '../logger.js';
+import
+    { ClientError,
+      ERROR_ACCOUNT_REGISTRATION_DISABLED,
+      ERROR_NO_ACCOUNT,
+      ERROR_UNKNOWN,
+      SERVER_ERROR_AUTH_PERMISSION_DENIED,
+    } from '../utils/errors.js';
 import Version from '../version.js';
 
 class AccountService {
@@ -26,10 +32,14 @@ class AccountService {
         }
     }
 
+    reset() {
+        this.account = {}
+    }
+
     async refreshToken(force = false) {
         const accountId = this.account?.account_id;
         if (!accountId) {
-            return false;
+            return new ClientError(ERROR_NO_ACCOUNT);
         }
         if (this.token && !force) {
             return this.token;
@@ -43,10 +53,16 @@ class AccountService {
             });
             this.token = response.data.token;
             return this.token;
-        } catch(error) {
-            Logger.error(`Failed to get refresh token for account ${this.account.account_id}: ${error.message}`);
+        } catch (error) {
+            if (error.response == undefined) {
+                return error;
+            }
+            const err = error.response?.data?.error;
+            if (err == SERVER_ERROR_AUTH_PERMISSION_DENIED) {
+                return new ClientError(ERROR_NO_ACCOUNT);
+            }
+            return new ClientError(err ?? ERROR_UNKNOWN);
         }
-        return false;
     }
 
     async create() {
@@ -58,18 +74,18 @@ class AccountService {
             });
             this.account = response.data;
             return true;
-        } catch(error) {
+        } catch (error) {
             if (error.response) {
                 if (error.response.status == 404) {
-                    Logger.error('Account registration not enabled');
+                    return new ClientError(ERROR_ACCOUNT_REGISTRATION_DISABLED);
                 } else {
-                    Logger.error(`Failed to create account: ${error.response.status}`);
+                    const err = error.response?.data?.error;
+                    return new ClientError(err ?? ERROR_UNKNOWN);
                 }
             } else {
-                Logger.error(`Failed to create account: ${error.message}`);
+                return error;
             }
         }
-        return false;
     }
 }
 

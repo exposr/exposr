@@ -3,14 +3,9 @@ import WebSocket from 'ws';
 import UpstreamConnector from './upstream-connector.js';
 import WebSocketTransport from './transport/ws/ws-transport.js';
 import { Logger } from './logger.js';
+import { ClientError } from './utils/errors.js';
 
-const logger = Logger("tunnel");
-
-export const Errors = {
-    ERR_NOT_AUTHORIZED: -65536,
-    ERR_UNEXP: -65537,
-    ERR_CON_TIMEOUT: -65538,
-}
+const logger = Logger("tunnel-connector");
 
 export class Tunnel extends EventEmitter {
     constructor(upstream, opts) {
@@ -26,18 +21,28 @@ export class Tunnel extends EventEmitter {
         const ws = this.sock = new WebSocket(endpoint, { handshakeTimeout: 2000 });
 
         ws.once('unexpected-response', (req, res) => {
-            const err = new Error(`Failed to establish websocket to ${endpoint}: ${res.statusCode} ${res.statusMessage}`)
-            if (res.statusCode == 401) {
-                err.code = Errors.ERR_NOT_AUTHORIZED;
-            } else {
-                err.code = Errors.ERR_UNEXP;
-            }
-            this.emit('error', err);
+            res.on('data', (chunk) => {
+                let err;
+                const errCode = JSON.parse(chunk);
+                if (typeof errCode?.error == 'string') {
+                    err = new ClientError(errCode.error);
+                } else {
+                    if (res.statusCode == 401 || res.statusCode == 403) {
+                        err = new ClientError(SERVER_ERROR_AUTH_PERMISSION_DENIED);
+                    } else if (res.statusCode == 503) {
+                        err = new ClientError(SERVER_ERROR_TUNNEL_ALREADY_CONNECTED);
+                    } else {
+                        err = new ClientError(ERROR_UNKNOWN);
+                    }
+                }
+                logger.trace(err);
+                this.emit('error', err);
+            });
         });
 
         ws.once('timeout', () => {
-            const err = new Error(`Failed to establish websocket to ${endpoint}: Handshake timeout`)
-            err.code = Errors.ERR_CON_TIMEOUT;
+            const err = new ClientError(ERROR_SERVER_TIMEOUT);
+            logger.trace(err);
             this.emit('error', err);
         })
 
@@ -87,14 +92,7 @@ export class Tunnel extends EventEmitter {
 
          });
 
-        ws.once('error', (wsErr) => {
-            const err = new Error();
-            err.code = wsErr.code;
-            if (this.established) {
-                err.message = `Websocket error: ${wsErr.message}`;
-            } else {
-                err.message = `Failed to establish websocket to ${endpoint}: ${wsErr.message}`;
-            }
+        ws.once('error', (err) => {
             this.emit('error', err);
         });
 

@@ -1,8 +1,10 @@
 import axios from 'axios';
 import Config from '../config.js';
-import Logger from '../logger.js';
 import Version from '../version.js';
 import AccountService from './account-service.js';
+import { ClientError,
+         ERROR_UNKNOWN,
+       } from '../utils/errors.js';
 
 class TunnelService {
     constructor() {
@@ -30,9 +32,9 @@ class TunnelService {
             return this.tunnelData;
         }
 
-        const token = await new AccountService().refreshToken();
-        if (!token) {
-            return false;
+        const token = await new AccountService().refreshToken(force);
+        if (typeof token != 'string') {
+            return token;
         }
 
         try {
@@ -48,15 +50,18 @@ class TunnelService {
             this.tunnelData = response.data;
             return this.tunnelData;
         } catch (error) {
-            Logger.error(`Failed to read tunnel configuration: ${error.message}`);
+            if (error.response == undefined) {
+                return error;
+            }
+            const err = error.response?.data?.error;
+            return new ClientError(err ?? ERROR_UNKNOWN);
         }
-        return false;
     }
 
     async create(tunnelId) {
         const token = await new AccountService().refreshToken();
-        if (!token) {
-            return false;
+        if (typeof token != 'string') {
+            return token;
         }
 
         const props = {
@@ -81,15 +86,19 @@ class TunnelService {
             this.tunnelId = tunnelId;
             return true;
         } catch (error) {
-            Logger.error(`Failed to create tunnel: ${error.response.status}`);
+            if (error.response == undefined) {
+                return error;
+            }
+            const err = error.response?.data?.error;
+            const field = error.response?.data?.field;
+            return new ClientError(err ?? ERROR_UNKNOWN, field);
         }
-        return false;
     }
 
     async update(props) {
         const token = await new AccountService().refreshToken();
-        if (!token) {
-            return false;
+        if (typeof token != 'string') {
+            return token;
         }
 
         try {
@@ -105,16 +114,19 @@ class TunnelService {
             this.tunnelData = response.data;
             return true;
         } catch(error) {
-            Logger.error(`Failed to update tunnel ${this.tunnelId}: ${error.message}`);
+            if (error.response == undefined) {
+                return error;
+            }
+            const err = error.response?.data?.error;
+            const field = error.response?.data?.field;
+            return new ClientError(err ?? ERROR_UNKNOWN, field);
         }
-        return false;
-
     }
 
     async delete() {
        const token = await new AccountService().refreshToken();
-        if (!token) {
-            return false;
+        if (typeof token != 'string') {
+            return token;
         }
 
         try {
@@ -131,15 +143,18 @@ class TunnelService {
             this.tunnelId = undefined;
             return true;
         } catch (error) {
-            Logger.error(`Failed to delete tunnel ${this.tunnelId}: ${error.message}`);
+            if (error.response == undefined) {
+                return error;
+            }
+            const err = error.response?.data?.error;
+            return new ClientError(err ?? ERROR_UNKNOWN);
         }
-        return false;
     }
 
     async disconnect() {
        const token = await new AccountService().refreshToken();
-        if (!token) {
-            return false;
+        if (typeof token != 'string') {
+            return token;
         }
 
         try {
@@ -155,12 +170,13 @@ class TunnelService {
             });
             return response?.data?.result;
         } catch (error) {
-            Logger.error(`Failed to disconnect tunnel ${this.tunnelId}: ${error.message}`);
+            if (error.response == undefined) {
+                return error;
+            }
+            const err = error.response?.data?.error;
+            return new ClientError(err ?? ERROR_UNKNOWN);
         }
-        return false;
     }
-
-
 }
 
 export default TunnelService;
