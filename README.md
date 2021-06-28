@@ -15,8 +15,8 @@ For the server component, see [exposr-server](https://github.com/fredriklindberg
 
 Exposing localhost port 3000 using server at `exposr.example.com`
 
-    docker run --rm -ti exposr/exposr:unstable -s https://exposr.example.com tunnel http://host.docker.internal:3000
+    docker run --rm -ti exposr/exposr:latest -s https://exposr.example.com tunnel http://host.docker.internal:3000
 
 To expose/proxy a host different than localhost 
 
-    docker run --rm -ti exposr/exposr:unstable -s https://exposr.example.com tunnel https://example.net
+    docker run --rm -ti exposr/exposr:latest -s https://exposr.example.com tunnel https://example.net
