@@ -9,6 +9,7 @@ import { ClientError,
          ERROR_NO_ACCOUNT,
          ERROR_NO_TUNNEL,
          ERROR_NO_TUNNEL_ENDPOINT,
+         ERROR_NO_TUNNEL_UPSTREAM,
          SERVER_ERROR_AUTH_NO_ACCESS_TOKEN,
          SERVER_ERROR_AUTH_PERMISSION_DENIED,
          SERVER_ERROR_TUNNEL_ALREADY_CONNECTED,
@@ -60,10 +61,29 @@ const establishTunnel = async (ctx) => {
         ctx.event.emit('terminate');
     };
 
-    const tunnel = ctx.tunnel = new Tunnel(ctx.upstream, opts);
+    const tunnelService = new TunnelService();
+    const res = await tunnelService.read(ctx.refreshConfig);
+    if (res instanceof Error) {
+        isFatal(res) ? terminate(ctx, res) : reconnect(ctx);
+        return;
+    }
+
+    ctx.config = res;
+    ctx.refreshConfig = false;
+    if (ctx.config?.endpoints?.ws?.url == undefined) {
+        terminate(ctx, new ClientError(ERROR_NO_TUNNEL_ENDPOINT));
+        return;
+    }
+
+    if (ctx.config?.upstream?.url == undefined) {
+        terminate(ctx, new ClientError(ERROR_NO_TUNNEL_UPSTREAM));
+        return;
+    }
+
+    const tunnel = ctx.tunnel = new Tunnel(ctx.config.upstream.url, opts);
     tunnel.on('open', (endpoint) => {
         if (ctx.config.ingress?.http?.url) {
-            logger.info(`Tunnel established: ${ctx.config.ingress.http.url} <> ${ctx.upstream}`);
+            logger.info(`Tunnel established: ${ctx.config.ingress.http.url} <> ${ctx.config.upstream.url}`);
         } else {
             logger.warn("Tunnel established, but no ingress points returned by server");
         }
@@ -97,20 +117,6 @@ const establishTunnel = async (ctx) => {
         }
     });
 
-    const tunnelService = new TunnelService();
-    const res = await tunnelService.read(ctx.refreshConfig);
-    if (res instanceof Error) {
-        isFatal(res) ? terminate(ctx, res) : reconnect(ctx);
-        return;
-    }
-
-    ctx.config = res;
-    ctx.refreshConfig = false;
-    if (ctx.config?.endpoints?.ws?.url == undefined) {
-        terminate(ctx, new ClientError(ERROR_NO_TUNNEL_ENDPOINT));
-        return;
-    }
-
     logger.debug(`Connecting to ${ctx.config.endpoints.ws.url}`);
     tunnel.connect(ctx.config.endpoints.ws.url);
 };
@@ -128,27 +134,6 @@ export default async () => {
         return new ClientError(ERROR_NO_TUNNEL);
     }
 
-    if (!Config.get('upstream-url')) {
-        logger.error("No upstream target URL provided");
-        return false;
-    }
-
-    const props = {
-        ingress: {
-            http: {
-                enabled: Config.get('ingress-http'),
-            },
-        },
-        upstream: {
-            url: Config.get('upstream-url'),
-        }
-    }
-
-    if (!await tunnelService.update(props)) {
-        logger.error(`Failed to configure tunnel ${tunnelService.tunnelId}`);
-        return false;
-    }
-
     const rewriteHeaders = Config.get('http-header-rewrite') || [];
     const replaceHeaders = Config.get('http-header-replace') || {};
     const transformEnabled = Config.get('http-mode') && (rewriteHeaders.length > 0 || Object.keys(replaceHeaders).length > 0);
@@ -158,7 +143,6 @@ export default async () => {
         }
     }
 
-    logger.info(`Upstream target: ${Config.get('upstream-url')}`);
     logger.info(`Local HTTP parsing: ${Config.get('http-mode') ? 'enabled': 'disabled'}`);
     if (Config.get('http-mode')) {
         logger.info(`HTTP header rewrite: ${rewriteHeaders.join(", ")}`);
@@ -166,7 +150,6 @@ export default async () => {
     }
 
     const ctx = {
-        upstream: Config.get('upstream-url'),
         allowInsecure: Config.get('insecure'),
         transformerStream,
         established: false,

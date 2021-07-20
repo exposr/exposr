@@ -31,5 +31,10 @@ export default async () => {
     tunnel.connection.disconnected_at && Logger.info(`Disconnected at: ${tunnel.connection.disconnected_at}`);
     Logger.info(`Created at: ${tunnel.created_at}`);
 
+    Logger.info('Configuration');
+    Logger.info(`upstream-url: ${tunnel.upstream?.url ? tunnel.upstream?.url : '<not set>'}`);
+    Logger.info(`ingress-http: ${tunnel.ingress?.http?.enabled ? tunnel.ingress?.http?.enabled : '<not set>'}`);
+    Logger.info(`transport-ws: ${tunnel.endpoints?.ws?.enabled ? tunnel.endpoints?.ws?.enabled : '<not set>'}`);
+
     return true;
 }

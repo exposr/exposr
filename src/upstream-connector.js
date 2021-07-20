@@ -4,14 +4,14 @@ import portNumbers from 'port-numbers';
 import dnscache from 'dnscache';
 
 class UpstreamConnector {
-    constructor(url, opts = {}) {
+    constructor(upstream, opts = {}) {
         this.dnscache = new dnscache({
             enable: true,
             ttl: 60,
             cachesize: 10,
         })
         this.opts = opts;
-        this.url = url;
+        const url = this.url = new URL(upstream);
         this.protocol = url.protocol.slice(0, -1);
         const protocolInfo = portNumbers.getPort(this.protocol);
         this.tls = this.protocol === 'tcps' || this.protocol === 'tls' || this.protocol === 'https' || this.protocol === 'wss';

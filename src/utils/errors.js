@@ -59,3 +59,4 @@ export const ERROR_SERVER_TIMEOUT = 2;
 export const ERROR_NO_ACCOUNT = 3;
 export const ERROR_NO_TUNNEL = 4;
 export const ERROR_NO_TUNNEL_ENDPOINT = 5;
+export const ERROR_NO_TUNNEL_UPSTREAM = 6;

@@ -64,16 +64,8 @@ class TunnelService {
             return token;
         }
 
-        const props = {
-            ingress: {
-                http: {
-                    enabled: Config.get('ingress-http'),
-                }
-            }
-        }
-
         try {
-            const response = await this.httpClient.put(`/${tunnelId}`, props,
+            const response = await this.httpClient.put(`/${tunnelId}`, {},
             {
                 headers: {
                     'Authorization': `Bearer ${token}`,

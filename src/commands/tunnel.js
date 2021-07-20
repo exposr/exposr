@@ -1,16 +1,18 @@
+import Logger from '../logger.js';
+import AccountService from '../service/account-service.js';
+import TunnelService from '../service/tunnel-service.js';
+import {
+    ERROR_ACCOUNT_REGISTRATION_DISABLED,
+    ERROR_NO_ACCOUNT,
+    SERVER_ERROR_AUTH_PERMISSION_DENIED,
+    SERVER_ERROR_BAD_INPUT,
+    SERVER_ERROR_TUNNEL_ALREADY_CONNECTED
+} from '../utils/errors.js';
+import ConfigureTunnel from './configure-tunnel.js';
+import ConnectTunnel from './connect-tunnel.js';
 import CreateAccount from './create-account.js';
 import CreateTunnel from './create-tunnel.js';
 import DeleteTunnel from './delete-tunnel.js';
-import ConnectTunnel from './connect-tunnel.js';
-import AccountService from '../service/account-service.js';
-import Logger from '../logger.js';
-import { ERROR_ACCOUNT_REGISTRATION_DISABLED,
-         ERROR_NO_ACCOUNT,
-         SERVER_ERROR_AUTH_PERMISSION_DENIED,
-         SERVER_ERROR_BAD_INPUT,
-         SERVER_ERROR_TUNNEL_ALREADY_CONNECTED,
-        } from '../utils/errors.js';
-import TunnelService from '../service/tunnel-service.js';
 
 export default async () => {
     const accountService = new AccountService();
@@ -62,6 +64,11 @@ export default async () => {
         }
 
         failRetry = await handleErr(await CreateTunnel());
+        if (failRetry !== undefined) {
+            continue;
+        }
+
+        failRetry = await handleErr(await ConfigureTunnel());
         if (failRetry !== undefined) {
             continue;
         }

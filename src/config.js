@@ -2,6 +2,30 @@ import yargs from 'yargs';
 import { URL } from 'url';
 import Version from './version.js';
 
+const validate_url = (str) => {
+    try {
+        const url = new URL(str);
+        if (url.protocol.startsWith('tcp') && url.port == '') {
+            throw new Error(`Port required for protocol ${url.protocol.slice(0, -1)}`);
+        }
+
+        return url;
+    } catch (err) {
+        console.log(`${str}: ${err.message}`);
+        process.exit(-1);
+    }
+}
+
+const validate_bool = (bool) => {
+    const isTrue = /^\s*(true|1|on)\s*$/i.test(bool);
+    const isFalse = /^\s*(false|0|off)\s*$/i.test(bool);
+    if (!isTrue && !isFalse) {
+        console.log(`Boolean expression expected - got ${bool}`)
+        process.exit(-1);
+    }
+    return isTrue;
+}
+
 const args = yargs
     .env("EXPOSR")
     .version(false)
@@ -16,9 +40,10 @@ const args = yargs
             process.exit(0);
         }
     })
-    .command('tunnel <upstream-url> [tunnel-id]', 'Create and connect tunnel', (yargs) => {
+    .command('tunnel <upstream-url> [tunnel-id]', 'Create and connect tunnel using Websocket transport', (yargs) => {
         yargs.positional('upstream-url', {
-            describe: 'Target URL to connect tunnel to'
+            describe: 'Target URL to connect tunnel to',
+            coerce: validate_url,
         }),
         yargs.positional('tunnel-id', {
             describe: 'Tunnel ID to create, random name if not specified'
@@ -27,6 +52,14 @@ const args = yargs
             ['$0 tunnel http://example.com', 'Create a random tunnel and connect to example.com'],
             ['$0 tunnel https://example.com example', 'Create tunnel example and connect to example.com over https'],
         ])
+    }, (argv) => {
+            if (argv['ingress-http'] === undefined) {
+            const isHttp = argv['upstream-url']?.protocol?.startsWith('http');
+            if (isHttp) {
+                argv['ingress-http'] = true;
+            }
+        }
+        argv['transport-ws'] = true;
     })
     .command('create-account', 'Create account at tunnel server', (yargs) => { })
     .command('create-tunnel [tunnel-id]', 'Create tunnel', (yargs) => {
@@ -37,18 +70,63 @@ const args = yargs
     .command('delete-tunnel <tunnel-id>', 'Delete existing tunnel', (yargs) => {
         yargs.positional('tunnel-id', {
             describe: 'Tunnel ID to delete'
+        }),
+        yargs.option('upstream-url', {
+            describe: 'Set upstream target url'
         })
     })
-    .command('connect-tunnel <tunnel-id> <upstream-url>', 'Establish connection to existing tunnel', (yargs) => {
+    .command('configure-tunnel <tunnel-id> <option> <value>', 'Set tunnel configuration', (yargs) => {
         yargs.positional('tunnel-id', {
-            describe: 'Tunnel ID to connect to'
+            describe: 'Tunnel to configure'
+        }),
+        yargs.positional('option', {
+            describe: 'Configuration option to set',
+            choices: [
+                'upstream-url',
+                'transport-ws',
+                'ingress-http',
+            ],
+        }),
+        yargs.positional('value', {
+            implies: 'option',
+            type: 'string',
+        }),
+        yargs.example([
+            ['$0 configure-tunnel example upstream-url https://example.com', ''],
+        ])
+    }, (argv) => {
+        const fn = {
+            'upstream-url': validate_url,
+            'transport-ws': validate_bool,
+            'ingress-http': validate_bool,
+        }
+
+        argv[argv.option] = fn[argv.option](argv.value);
+        delete argv.value;
+    })
+    .command('connect-tunnel <tunnel-id> [upstream-url]', 'Establish connection to existing tunnel using Websocket transport', (yargs) => {
+        yargs.positional('tunnel-id', {
+            describe: 'Tunnel to connect to'
         }),
         yargs.positional('upstream-url', {
-            describe: 'Target URL to connect tunnel to'
+            describe: 'Target URL to connect tunnel to',
+            coerce: validate_url,
+        }),
+        yargs.option('ingress-http', {
+            type: 'boolean',
+            description: 'Request HTTP ingress from tunnel server (automatic based on upstream URL)'
         }),
         yargs.example([
             ['$0 connect-tunnel example https://example.com', 'Connect tunnel example to https://example.com'],
         ])
+    }, (argv) => {
+        if (argv['ingress-http'] === undefined) {
+            const isHttp = argv['upstream-url']?.protocol?.startsWith('http');
+            if (isHttp) {
+                argv['ingress-http'] = true;
+            }
+        }
+        argv['transport-ws'] = true;
     })
     .command('disconnect-tunnel <tunnel-id>', 'Disconnect a connected tunnel', (yargs) => {
         yargs.positional('tunnel-id', {
@@ -85,10 +163,6 @@ const args = yargs
         type: 'boolean',
         description: 'Skip upstream TLS certificate verification',
         default: false,
-    })
-    .option('ingress-http', {
-        type: 'boolean',
-        description: 'Request HTTP ingress from tunnel server (automatic based on upstream URL)'
     })
     .option('http-mode', {
         type: 'boolean',
@@ -147,15 +221,14 @@ const args = yargs
 class Config {
     constructor() {
         this._config = args.argv;
-
-        if (this._config['ingress-http'] === undefined) {
-            const proto = this._config['upstream-url']?.protocol;
-            this._config['ingress-http'] = proto == 'http:' || proto == 'https:';
-        }
     }
 
     get(key) {
         return this._config[key];
+    }
+
+    has(key) {
+        return this._config[key] != undefined;
     }
 
 }

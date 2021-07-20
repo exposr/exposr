@@ -1,11 +1,12 @@
 import Logger from '../logger.js';
+import ConfigureTunnel from './configure-tunnel.js';
+import ConnectTunnel from './connect-tunnel.js';
 import CreateAccount from './create-account.js';
 import CreateTunnel from './create-tunnel.js';
 import DeleteTunnel from './delete-tunnel.js';
-import ConnectTunnel from './connect-tunnel.js';
 import DisconnectTunnel from './disconnect-tunnel.js';
-import TunnelCommand from './tunnel.js';
 import TunnelInfo from './tunnel-info.js';
+import TunnelCommand from './tunnel.js';
 
 class Command {
     constructor() {
@@ -27,6 +28,9 @@ class Command {
                 break;
             case 'connect-tunnel':
                 ConnectTunnel();
+                break;
+            case 'configure-tunnel':
+                ConfigureTunnel();
                 break;
             case 'tunnel':
                 TunnelCommand();
