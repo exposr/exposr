@@ -31,10 +31,21 @@ export default async () => {
     tunnel.connection.disconnected_at && Logger.info(`Disconnected at: ${tunnel.connection.disconnected_at}`);
     Logger.info(`Created at: ${tunnel.created_at}`);
 
+    Logger.info(`Transport endpoints`);
+    Object.keys(tunnel.endpoints).forEach(ep => {
+        Logger.info(`  ${ep.toUpperCase()}: ${tunnel.endpoints[ep]?.url}`);
+    });
+
+    Logger.info(`Ingress points`);
+    Object.keys(tunnel.ingress).forEach(ing => {
+        Logger.info(`  ${ing.toUpperCase()}: ${tunnel.ingress[ing]?.url}`);
+    });
+
     Logger.info('Configuration');
-    Logger.info(`upstream-url: ${tunnel.upstream?.url ? tunnel.upstream?.url : '<not set>'}`);
-    Logger.info(`ingress-http: ${tunnel.ingress?.http?.enabled ? tunnel.ingress?.http?.enabled : '<not set>'}`);
-    Logger.info(`transport-ws: ${tunnel.endpoints?.ws?.enabled ? tunnel.endpoints?.ws?.enabled : '<not set>'}`);
+    Logger.info(`  upstream-url: ${tunnel.upstream?.url ? tunnel.upstream?.url : '<not set>'}`);
+    Logger.info(`  ingress-http: ${tunnel.ingress?.http?.enabled ? tunnel.ingress?.http?.enabled : '<not set>'}`);
+    Logger.info(`  transport-ws: ${tunnel.endpoints?.ws?.enabled ? tunnel.endpoints?.ws?.enabled : '<not set>'}`);
+    Logger.info(`  transport-ssh: ${tunnel.endpoints?.ssh?.enabled ? tunnel.endpoints?.ssh?.enabled : '<not set>'}`);
 
     return true;
 }

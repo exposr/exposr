@@ -15,6 +15,7 @@ export default async () => {
     const configOptions = {
         'upstream-url': {upstream: { url: Config.get('upstream-url')?.href}},
         'transport-ws': {endpoints: { ws: { enabled: Config.get('transport-ws')}}},
+        'transport-ssh': {endpoints: { ssh: { enabled: Config.get('transport-ssh')}}},
         'ingress-http': {ingress: { http: { enabled: Config.get('ingress-http')}}},
     };
 

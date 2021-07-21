@@ -84,6 +84,7 @@ const args = yargs
             choices: [
                 'upstream-url',
                 'transport-ws',
+                'transport-ssh',
                 'ingress-http',
             ],
         }),
@@ -98,6 +99,7 @@ const args = yargs
         const fn = {
             'upstream-url': validate_url,
             'transport-ws': validate_bool,
+            'transport-ssh': validate_bool,
             'ingress-http': validate_bool,
         }
 
