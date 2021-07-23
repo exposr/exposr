@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.2.0](https://github.com/exposr/exposr-cli/compare/v0.1.0...v0.2.0) (2021-07-23)
+
+
+### Features
+
+* add configure-tunnel command ([a7c2d89](https://github.com/exposr/exposr-cli/commit/a7c2d8937b4530a8f8351bc106e49c3401ad4ba2))
+* support configuration of SSH tunnel transport ([65b6253](https://github.com/exposr/exposr-cli/commit/65b6253ffc70d37a498f49b619f30ed4627187f4))
+
 ## 0.1.0 (2021-06-28)
 
 
