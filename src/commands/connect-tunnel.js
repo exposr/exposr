@@ -85,11 +85,13 @@ const establishTunnel = async (ctx) => {
 
     const tunnel = ctx.tunnel = new Tunnel(ctx.config.upstream.url, opts);
     tunnel.on('open', (endpoint) => {
-        if (ctx.config.ingress?.http?.url) {
-            logger.info(`Tunnel established: ${ctx.config.ingress.http.url} <> ${ctx.config.upstream.url}`);
-        } else {
-            logger.warn("Tunnel established, but no ingress points returned by server");
-        }
+        logger.info(`Tunnel established to ${ctx.config.upstream.url}`);
+        Object.keys(ctx.config.ingress).forEach((ingress) => {
+            const url = ctx.config.ingress[ingress]?.url;
+            if (url) {
+                logger.info(`Ingress ${ingress.toUpperCase()}: ${url}`);
+            }
+        });
         ctx.established = true;
         ctx.refreshConfig = true;
         ctx.lastErr = undefined;

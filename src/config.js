@@ -50,16 +50,19 @@ const args = yargs
         }),
         yargs.option('ingress', {
             type: 'string',
-            choices: ['http'],
+            choices: ['http', 'sni'],
             default: 'http',
-            description: 'Ingress method to request from server'
+            description: 'Ingress method to request from server',
+            coerce: (value) => {
+                return typeof value === 'string' ? [value] : value;
+            },
         }),
         yargs.example([
             ['$0 tunnel http://example.com', 'Create a random tunnel and connect to example.com'],
             ['$0 tunnel https://example.com example', 'Create tunnel example and connect to example.com over https'],
         ])
     }, (argv) => {
-        argv[`ingress-${argv.ingress}`] = true;
+        argv.ingress.forEach((ingress) => argv[`ingress-${ingress}`] = true);
         argv['transport-ws'] = true;
     })
     .command('create-account', 'Create account at tunnel server', (yargs) => { })
@@ -87,6 +90,7 @@ const args = yargs
                 'transport-ws',
                 'transport-ssh',
                 'ingress-http',
+                'ingress-sni',
             ],
         }),
         yargs.positional('value', {
@@ -102,6 +106,7 @@ const args = yargs
             'transport-ws': validate_bool,
             'transport-ssh': validate_bool,
             'ingress-http': validate_bool,
+            'ingress-sni': validate_bool,
         }
 
         argv[argv.option] = fn[argv.option](argv.value);
@@ -117,15 +122,18 @@ const args = yargs
         }),
         yargs.option('ingress', {
             type: 'string',
-            choices: ['http'],
+            choices: ['http', 'sni'],
             default: 'http',
-            description: 'Ingress method to request from server'
+            description: 'Ingress method to request from server',
+            coerce: (value) => {
+                return typeof value === 'string' ? [value] : value;
+            },
         }),
         yargs.example([
             ['$0 connect-tunnel example https://example.com', 'Connect tunnel example to https://example.com'],
         ])
     }, (argv) => {
-        argv[`ingress-${argv.ingress}`] = true;
+        argv.ingress.forEach((ingress) => argv[`ingress-${ingress}`] = true);
         argv['transport-ws'] = true;
     })
     .command('disconnect-tunnel <tunnel-id>', 'Disconnect a connected tunnel', (yargs) => {

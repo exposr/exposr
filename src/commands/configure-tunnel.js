@@ -17,6 +17,7 @@ export default async () => {
         'transport-ws': {endpoints: { ws: { enabled: Config.get('transport-ws')}}},
         'transport-ssh': {endpoints: { ssh: { enabled: Config.get('transport-ssh')}}},
         'ingress-http': {ingress: { http: { enabled: Config.get('ingress-http')}}},
+        'ingress-sni': {ingress: { sni: { enabled: Config.get('ingress-sni')}}},
     };
 
     const accountService = new AccountService();
