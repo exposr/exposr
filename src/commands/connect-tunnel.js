@@ -1,20 +1,23 @@
-import Tunnel from '../tunnel.js';
-import AccountService from '../service/account-service.js';
-import TunnelService from '../service/tunnel-service.js';
+import { EventEmitter } from 'events';
 import Config from '../config.js';
 import { Logger } from '../logger.js';
+import AccountService from '../service/account-service.js';
+import TunnelService from '../service/tunnel-service.js';
 import HttpTransformer from '../transformer/http-transformer.js';
-import { EventEmitter } from 'events';
-import { ClientError,
-         ERROR_NO_ACCOUNT,
-         ERROR_NO_TUNNEL,
-         ERROR_NO_TUNNEL_ENDPOINT,
-         ERROR_NO_TUNNEL_UPSTREAM,
-         SERVER_ERROR_AUTH_NO_ACCESS_TOKEN,
-         SERVER_ERROR_AUTH_PERMISSION_DENIED,
-         SERVER_ERROR_TUNNEL_ALREADY_CONNECTED,
-         SERVER_ERROR_TUNNEL_NOT_FOUND
-        } from '../utils/errors.js';
+import Tunnel from '../tunnel.js';
+import {
+    ClientError,
+    ERROR_NO_ACCOUNT,
+    ERROR_NO_TUNNEL,
+    ERROR_NO_TUNNEL_ENDPOINT,
+    ERROR_NO_TUNNEL_UPSTREAM,
+    ERROR_UNKNOWN,
+    SERVER_ERROR_AUTH_NO_ACCESS_TOKEN,
+    SERVER_ERROR_AUTH_PERMISSION_DENIED,
+    SERVER_ERROR_TUNNEL_ALREADY_CONNECTED,
+    SERVER_ERROR_TUNNEL_NOT_FOUND
+} from '../utils/errors.js';
+import ConfigureTunnel from './configure-tunnel.js';
 
 const logger = Logger('connect-tunnel');
 
@@ -134,6 +137,11 @@ export default async () => {
         return new ClientError(ERROR_NO_TUNNEL);
     }
 
+    if (!await ConfigureTunnel()) {
+        logger.trace("failed to configure tunnel");
+        return new ClientError(ERROR_UNKNOWN);
+    }
+
     const rewriteHeaders = Config.get('http-header-rewrite') || [];
     const replaceHeaders = Config.get('http-header-replace') || {};
     const transformEnabled = Config.get('http-mode') && (rewriteHeaders.length > 0 || Object.keys(replaceHeaders).length > 0);
@@ -155,17 +163,19 @@ export default async () => {
         established: false,
         event: new EventEmitter(),
     };
-
     establishTunnel(ctx);
+
     const sigHandler = () => {
         ctx.terminate = true;
         ctx.tunnel.disconnect();
         ctx.timer && clearTimeout(ctx.timer);
         ctx.lastErr = undefined;
+        ctx.refreshConfig = true;
         ctx.event.emit('terminate');
     };
     process.on('SIGTERM', sigHandler);
     process.on('SIGINT', sigHandler);
+
     await new Promise((resolve) => {
         ctx.event.once('terminate', resolve);
     });

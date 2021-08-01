@@ -68,11 +68,6 @@ export default async () => {
             continue;
         }
 
-        failRetry = await handleErr(await ConfigureTunnel());
-        if (failRetry !== undefined) {
-            continue;
-        }
-
         failRetry = await handleErr(await ConnectTunnel());
     } while (failRetry == true);
 
