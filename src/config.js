@@ -48,17 +48,18 @@ const args = yargs
         yargs.positional('tunnel-id', {
             describe: 'Tunnel ID to create, random name if not specified'
         }),
+        yargs.option('ingress', {
+            type: 'string',
+            choices: ['http'],
+            default: 'http',
+            description: 'Ingress method to request from server'
+        }),
         yargs.example([
             ['$0 tunnel http://example.com', 'Create a random tunnel and connect to example.com'],
             ['$0 tunnel https://example.com example', 'Create tunnel example and connect to example.com over https'],
         ])
     }, (argv) => {
-            if (argv['ingress-http'] === undefined) {
-            const isHttp = argv['upstream-url']?.protocol?.startsWith('http');
-            if (isHttp) {
-                argv['ingress-http'] = true;
-            }
-        }
+        argv[`ingress-${argv.ingress}`] = true;
         argv['transport-ws'] = true;
     })
     .command('create-account', 'Create account at tunnel server', (yargs) => { })
@@ -114,20 +115,17 @@ const args = yargs
             describe: 'Target URL to connect tunnel to',
             coerce: validate_url,
         }),
-        yargs.option('ingress-http', {
-            type: 'boolean',
-            description: 'Request HTTP ingress from tunnel server (automatic based on upstream URL)'
+        yargs.option('ingress', {
+            type: 'string',
+            choices: ['http'],
+            default: 'http',
+            description: 'Ingress method to request from server'
         }),
         yargs.example([
             ['$0 connect-tunnel example https://example.com', 'Connect tunnel example to https://example.com'],
         ])
     }, (argv) => {
-        if (argv['ingress-http'] === undefined) {
-            const isHttp = argv['upstream-url']?.protocol?.startsWith('http');
-            if (isHttp) {
-                argv['ingress-http'] = true;
-            }
-        }
+        argv[`ingress-${argv.ingress}`] = true;
         argv['transport-ws'] = true;
     })
     .command('disconnect-tunnel <tunnel-id>', 'Disconnect a connected tunnel', (yargs) => {
