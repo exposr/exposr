@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.2.1](https://github.com/exposr/exposr-cli/compare/v0.2.0...v0.2.1) (2021-08-02)
+
+
+### Bug Fixes
+
+* always run configure before connect tunnel ([f69d325](https://github.com/exposr/exposr-cli/commit/f69d32528f8573d7a8b8f62d52179043e2f4d54c))
+* request http ingress by default ([0dc0e59](https://github.com/exposr/exposr-cli/commit/0dc0e59ea5106dcfbfd94c6afdbbae07a39c142a))
+
 ## [0.2.0](https://github.com/exposr/exposr-cli/compare/v0.1.0...v0.2.0) (2021-07-23)
 
 
