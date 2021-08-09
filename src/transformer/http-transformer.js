@@ -31,13 +31,13 @@ class HttpTransformer extends stream.Transform {
                     if (value.toLowerCase().startsWith('http')) {
                         try {
                             const url = new URL(value);
-                            if (url.host == this.downstreamUrl.host) {
+                            if (url.hostname == this.downstreamUrl.hostname) {
                                 url.protocol = this.upstreamUrl.protocol;
-                                url.host = this.upstreamUrl.host;
+                                url.hostname = this.upstreamUrl.hostname;
                                 url.port = this.upstreamUrl.port;
                                 value = url.href;
                             }
-                        } catch {
+                        } catch (e) {
                         }
                     } else {
                         value = this.upstreamHost;
