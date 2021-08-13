@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.2.2](https://github.com/exposr/exposr-cli/compare/v0.2.1...v0.2.2) (2021-08-13)
+
+
+### Bug Fixes
+
+* **http-transformer:** header rewriting when on different ports ([592056e](https://github.com/exposr/exposr-cli/commit/592056e77fedabdaa6af772195f847df464cbb83))
+
 ### [0.2.1](https://github.com/exposr/exposr-cli/compare/v0.2.0...v0.2.1) (2021-08-02)
 
 
