@@ -88,7 +88,13 @@ const establishTunnel = async (ctx) => {
         logger.info(`Tunnel established to ${ctx.config.upstream.url}`);
         Object.keys(ctx.config.ingress).forEach((ingress) => {
             const url = ctx.config.ingress[ingress]?.url;
-            if (url) {
+            const urls = ctx.config.ingress[ingress]?.urls;
+            if (urls) {
+                urls.forEach(url => {
+                    logger.info(`Ingress ${ingress.toUpperCase()}: ${url}`);
+                });
+            }
+            else if (url) {
                 logger.info(`Ingress ${ingress.toUpperCase()}: ${url}`);
             }
         });

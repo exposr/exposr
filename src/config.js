@@ -26,6 +26,11 @@ const validate_bool = (bool) => {
     return isTrue;
 }
 
+const validate_array = (arrayish) => {
+    const array = arrayish?.split(',').filter((x) => x.length > 0);
+    return array;
+}
+
 const args = yargs
     .env("EXPOSR")
     .version(false)
@@ -90,6 +95,7 @@ const args = yargs
                 'transport-ws',
                 'transport-ssh',
                 'ingress-http',
+                'ingress-http-altnames',
                 'ingress-sni',
             ],
         }),
@@ -106,6 +112,7 @@ const args = yargs
             'transport-ws': validate_bool,
             'transport-ssh': validate_bool,
             'ingress-http': validate_bool,
+            'ingress-http-altnames': validate_array,
             'ingress-sni': validate_bool,
         }
 
