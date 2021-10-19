@@ -5,7 +5,7 @@ package_name=exposr-$(version).tgz
 project:=exposr
 version:=$(shell git describe --tags --always --dirty 2> /dev/null || git rev-parse --short HEAD)
 
-all:
+all: package.build.container image.build
 
 define docker.run
 	docker run --rm -i \
