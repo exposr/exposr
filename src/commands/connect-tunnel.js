@@ -73,7 +73,7 @@ const establishTunnel = async (ctx) => {
 
     ctx.config = res;
     ctx.refreshConfig = false;
-    if (ctx.config?.endpoints?.ws?.url == undefined) {
+    if (ctx.config?.transport?.ws?.url == undefined) {
         terminate(ctx, new ClientError(ERROR_NO_TUNNEL_ENDPOINT));
         return;
     }
@@ -128,8 +128,8 @@ const establishTunnel = async (ctx) => {
         }
     });
 
-    logger.debug(`Connecting to ${ctx.config.endpoints.ws.url}`);
-    tunnel.connect(ctx.config.endpoints.ws.url);
+    logger.debug(`Connecting to ${ctx.config.transport.ws.url}`);
+    tunnel.connect(ctx.config.transport.ws.url);
 };
 
 export default async () => {
