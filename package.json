@@ -25,7 +25,7 @@
     "yargs": "^15.4.1"
   },
   "devDependencies": {
-    "standard-version": "^9.3.0"
+    "standard-version": "^9.3.2"
   },
   "scripts": {
     "prepack": "scripts/build-env.sh > build.env",
