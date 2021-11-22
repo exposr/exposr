@@ -22,7 +22,7 @@
     "log4js": "^6.3.0",
     "port-numbers": "^6.0.0",
     "ws": "^7.4.6",
-    "yargs": "^15.4.1"
+    "yargs": "^17.2.1"
   },
   "devDependencies": {
     "standard-version": "^9.3.2"

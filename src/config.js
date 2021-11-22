@@ -2,6 +2,11 @@ import yargs from 'yargs';
 import { URL } from 'url';
 import Version from './version.js';
 
+const version = Version.version;
+let versionStr = `version: ${version.version} (pkg ${version.package})`;
+versionStr += version?.build?.commit ? `\ncommit: ${version?.build?.commit}/${version?.build?.branch}` : '';
+versionStr += version?.build?.date ? `\ntimestamp: ${version.build.date}` : '';
+
 const validate_url = (str) => {
     try {
         const url = new URL(str);
@@ -31,20 +36,9 @@ const validate_array = (arrayish) => {
     return array;
 }
 
-const args = yargs
+const args = yargs(process.argv.slice(2))
     .env("EXPOSR")
-    .version(false)
-    .option('version', {
-        alias: 'v',
-        describe: 'Show version information',
-        coerce: () => {
-            const version = Version.version;
-            console.log(`version: ${version.version} (pkg ${version.package})`);
-            version?.build?.commit && console.log(`commit: ${version?.build?.commit}/${version?.build?.branch}`);
-            version?.build?.date && console.log(`timestamp: ${version.build.date}`);
-            process.exit(0);
-        }
-    })
+    .version(versionStr)
     .command('tunnel <upstream-url> [tunnel-id]', 'Create and connect tunnel using Websocket transport', (yargs) => {
         yargs.positional('upstream-url', {
             describe: 'Target URL to connect tunnel to',
@@ -159,12 +153,7 @@ const args = yargs
           type: 'string',
           description: 'Tunnel server API endpoint',
           coerce: (url) => {
-            try {
-                return new URL(url);
-            } catch (err) {
-                console.log(err.message);
-                process.exit(-1);
-            }
+            return typeof url == 'string' ? new URL(url) : url;
         },
     })
     .demandOption('server')
@@ -213,12 +202,7 @@ const args = yargs
         return opt instanceof Array ? opt : [opt];
     })
     .coerce('upstream-url', (url) => {
-        try {
-            return new URL(url);
-        } catch (err) {
-            console.log(err.message);
-            process.exit(-1);
-        }
+        return typeof url == 'string' ? new URL(url) : url;
     })
     .option('log-level', {
         type: 'string',
