@@ -1,22 +1,24 @@
+import assert from 'assert/strict';
 import axios from 'axios';
-import Config from '../config.js';
-import
-    { ClientError,
-      ERROR_ACCOUNT_REGISTRATION_DISABLED,
-      ERROR_NO_ACCOUNT,
-      ERROR_UNKNOWN,
-      SERVER_ERROR_AUTH_PERMISSION_DENIED,
-    } from '../utils/errors.js';
+import {
+    ClientError,
+    ERROR_ACCOUNT_REGISTRATION_DISABLED,
+    ERROR_NO_ACCOUNT,
+    ERROR_UNKNOWN,
+    SERVER_ERROR_AUTH_PERMISSION_DENIED
+} from '../utils/errors.js';
 import Version from '../version.js';
 
 class AccountService {
-    constructor() {
+    constructor(opts) {
+        assert(opts.server != undefined, "opts.server not given");
+
         if (AccountService.instance instanceof AccountService) {
             return AccountService.instance;
         }
         AccountService.instance = this;
 
-        const baseUrl = new URL(Config.get('server'));
+        const baseUrl = new URL(opts.server);
         baseUrl.pathname += 'v1/account';
         this.httpClient = axios.create({
             baseURL: baseUrl.href,
@@ -27,8 +29,8 @@ class AccountService {
         });
 
         this.account = {
-            account_id: Config.get('account'),
-            account_id_hr: Config.get('account'),
+            account_id: opts.account,
+            account_id_hr: opts.account, 
         }
     }
 
@@ -39,7 +41,7 @@ class AccountService {
     async refreshToken(force = false) {
         const accountId = this.account?.account_id;
         if (!accountId) {
-            return new ClientError(ERROR_NO_ACCOUNT);
+            throw new ClientError(ERROR_NO_ACCOUNT);
         }
         if (this.token && !force) {
             return this.token;
@@ -55,13 +57,13 @@ class AccountService {
             return this.token;
         } catch (error) {
             if (error.response == undefined) {
-                return error;
+                throw error;
             }
             const err = error.response?.data?.error;
             if (err == SERVER_ERROR_AUTH_PERMISSION_DENIED) {
-                return new ClientError(ERROR_NO_ACCOUNT);
+                throw new ClientError(ERROR_NO_ACCOUNT);
             }
-            return new ClientError(err ?? ERROR_UNKNOWN);
+            throw new ClientError(err ?? ERROR_UNKNOWN);
         }
     }
 
@@ -73,17 +75,17 @@ class AccountService {
                 }
             });
             this.account = response.data;
-            return true;
+            return response.data;
         } catch (error) {
             if (error.response) {
                 if (error.response.status == 404) {
-                    return new ClientError(ERROR_ACCOUNT_REGISTRATION_DISABLED);
+                    throw new ClientError(ERROR_ACCOUNT_REGISTRATION_DISABLED);
                 } else {
                     const err = error.response?.data?.error;
-                    return new ClientError(err ?? ERROR_UNKNOWN);
+                    throw new ClientError(err ?? ERROR_UNKNOWN);
                 }
             } else {
-                return error;
+                throw error;
             }
         }
     }

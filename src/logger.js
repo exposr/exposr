@@ -1,5 +1,4 @@
 import Log4js from 'log4js';
-import Config from './config.js';
 
 Log4js.addLayout('json', function(config) {
     return function(logEvent) {
@@ -24,14 +23,14 @@ class LoggerFactory {
 
         Log4js.configure({
             appenders: {
-              out: { type: 'stdout', layout: { type: Config.get('log-format'), separator: ',' } }
+              out: { type: 'stdout', layout: { type: 'basic', separator: ',' } }
             },
             categories: {
-              default: { appenders: ['out'], level: Config.get("log-level") }
+              default: { appenders: ['out'], level: 'info' }
             }
         });
 
-        logger.level = Config.get("log-level");
+        logger.level = 'info';
 
         logger.withContext = (key, value) => {
             logger.addContext(key, value);

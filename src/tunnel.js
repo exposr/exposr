@@ -8,17 +8,55 @@ import { ClientError } from './utils/errors.js';
 const logger = Logger("tunnel-connector");
 
 export class Tunnel extends EventEmitter {
-    constructor(upstream, opts) {
+    constructor(opts) {
         super();
         this.opts = opts;
-        this.upstreamConnector = new UpstreamConnector(upstream, {
+
+        this.upstreamConnector = new UpstreamConnector(opts.upstreamUrl, {
             allowInsecure: opts.allowInsecure,
         });
         this.established = false;
     }
 
-    connect(endpoint) {
-        const ws = this.sock = new WebSocket(endpoint, { handshakeTimeout: 2000 });
+    connect(cancelSignal) {
+        const cancelController = new AbortController();
+        return new Promise((resolve, reject) => {
+
+            const abortHandler = () => {
+                this._ws_sock && this._ws_sock.disconnect();
+                handler(new Error('aborted'));
+            };
+
+            const handler = (e) => {
+                this.removeListener('open', openHandler);
+                this.removeListener('close', closeHandler);
+                this.removeListener('error', errorHandler);
+
+                cancelSignal && cancelSignal.removeEventListener('abort', abortHandler);
+
+                if (e) {
+                    reject(e);
+                } else {
+                    resolve();
+                }
+            };
+
+            const openHandler = () => { return handler(); }
+            const errorHandler = (e) => { return handler(e); }
+            const closeHandler = () => { return handler(new Error('Connection closed')); }
+
+            this.once('open', openHandler);
+            this.once('error', errorHandler);
+            this.once('close', closeHandler);
+
+            cancelSignal && cancelSignal.addEventListener('abort', abortHandler, { once: true });
+            this._connect();
+        });
+    }
+
+    _connect() {
+        const endpoint = this.opts.websocketUrl;
+        const ws = this._ws_sock = new WebSocket(endpoint, { handshakeTimeout: 2000 });
 
         ws.once('unexpected-response', (req, res) => {
             res.on('data', (chunk) => {
@@ -52,7 +90,7 @@ export class Tunnel extends EventEmitter {
             });
             transport.listen((sock) => {
                 logger.trace(`listen new sock paused=${sock.isPaused()}`);
-                const upstream = this.upstreamConnector.connect((err, upstreamSock) => {
+                const upstream = this.upstream = this.upstreamConnector.connect((err, upstreamSock) => {
                     if (err) {
                         sock.destroy();
                         upstream && upstream.destroy();
@@ -77,6 +115,7 @@ export class Tunnel extends EventEmitter {
                 });
 
                 sock.once('close', () => {
+                    console.log("CLOSE2");
                     upstream.unpipe();
                     upstream.destroy();
                 });
@@ -89,8 +128,7 @@ export class Tunnel extends EventEmitter {
 
             this.established = true;
             this.emit('open', endpoint);
-
-         });
+        });
 
         ws.once('error', (err) => {
             this.emit('error', err);
@@ -104,9 +142,9 @@ export class Tunnel extends EventEmitter {
     }
 
     disconnect() {
-        if (this.sock) {
-            this.sock.close();
-            this.sock = undefined;
+        if (this._ws_sock) {
+            this._ws_sock.close();
+            delete this._ws_sock;
         }
     }
 }

@@ -1,9 +1,6 @@
-import Command from './commands/index.js';
-import Logger from './logger.js';
-import Config from './config.js';
-import Version from './version.js';
+import commandExecute from './command-execute.js';
 
-export default () => {
-    Logger.info(`exposr cli ${Version.version.version}`);
-    Command.execute(Config.get('_')[0]);
-}
+(async () => {
+    await commandExecute(process.argv.slice(2), process.stdin, process.stdout);
+    process.exit(0);
+})();

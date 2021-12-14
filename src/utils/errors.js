@@ -13,7 +13,7 @@ export class ClientError extends Error {
     constructor(code, detailed) {
         super(code);
         this.code = code;
-        this.detailed = detailed;
+        this.detailed = detailed instanceof Array ? detailed.join(', ') : detailed;
 
         const m = {};
         m[SERVER_ERROR_TUNNEL_NOT_FOUND] = 'Tunnel not found';
@@ -22,6 +22,7 @@ export class ClientError extends Error {
         m[SERVER_ERROR_TUNNEL_HTTP_INGRESS_DISABLED] = 'HTTP ingress not enabled for tunnel';
         m[SERVER_ERROR_TUNNEL_TRANSPORT_REQUEST_LIMIT] = 'Tunnel transport concurrent connection limit';
         m[SERVER_ERROR_TUNNEL_UPSTREAM_CON_REFUSED] = 'Upstream connection refused';
+        m[SERVER_ERROR_TUNNEL_INGRESS_BAD_ALT_NAMES] = detailed ? `The altname ${detailed} can not be configured for this tunnel` : 'Ingress altname can not be configured';
         m[SERVER_ERROR_HTTP_INGRESS_REQUEST_LOOP] = 'Request loop at ingress';
         m[SERVER_ERROR_UNKNOWN_ERROR] = 'Unknown server error';
         m[SERVER_ERROR_BAD_INPUT] = detailed ? `Bad input: ${detailed}` : 'Bad input';
@@ -30,9 +31,9 @@ export class ClientError extends Error {
         m[ERROR_UNKNOWN] = 'Unknown client error';
         m[ERROR_ACCOUNT_REGISTRATION_DISABLED] = 'Account registration not enabled';
         m[ERROR_SERVER_TIMEOUT] = 'Timeout';
-        m[ERROR_NO_ACCOUNT] = 'No account';
+        m[ERROR_NO_ACCOUNT] = 'No account was provided';
+        m[ERROR_NO_TUNNEL] = 'No tunnel was provided';
         m[ERROR_NO_TUNNEL_ENDPOINT] = 'No tunnel endpoint available';
-
         this.message = m[code] || 'Unknown error';
     }
 }
@@ -46,6 +47,7 @@ export const SERVER_ERROR_TUNNEL_TRANSPORT_REQUEST_LIMIT = 'TUNNEL_TRANSPORT_REQ
 export const SERVER_ERROR_TUNNEL_TRANSPORT_CON_TIMEOUT = 'TUNNEL_TRANSPORT_CON_TIMEOUT';
 export const SERVER_ERROR_TUNNEL_UPSTREAM_CON_REFUSED = 'TUNNEL_UPSTREAM_CON_RESET';
 export const SERVER_ERROR_TUNNEL_UPSTREAM_CON_FAILED = 'TUNNEL_UPSTREAM_CON_FAILED';
+export const SERVER_ERROR_TUNNEL_INGRESS_BAD_ALT_NAMES = 'TUNNEL_INGRESS_BAD_ALT_NAMES';
 export const SERVER_ERROR_HTTP_INGRESS_REQUEST_LOOP = 'HTTP_INGRESS_REQUEST_LOOP';
 export const SERVER_ERROR_UNKNOWN_ERROR = 'UNKNOWN_ERROR';
 export const SERVER_ERROR_BAD_INPUT = 'BAD_INPUT';

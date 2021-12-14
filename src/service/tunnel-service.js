@@ -1,19 +1,21 @@
 import axios from 'axios';
-import Config from '../config.js';
+import {
+    ClientError,
+    ERROR_UNKNOWN
+} from '../utils/errors.js';
 import Version from '../version.js';
 import AccountService from './account-service.js';
-import { ClientError,
-         ERROR_UNKNOWN,
-       } from '../utils/errors.js';
 
 class TunnelService {
-    constructor() {
+    constructor(opts) {
         if (TunnelService.instance instanceof TunnelService) {
             return TunnelService.instance;
         }
         TunnelService.instance = this;
 
-        const baseUrl = new URL(Config.get('server'));
+        this._accountService = new AccountService(opts);
+
+        const baseUrl = new URL(opts.server);
         baseUrl.pathname += 'v1/tunnel';
         this.httpClient = axios.create({
             baseURL: baseUrl.href,
@@ -23,7 +25,7 @@ class TunnelService {
             }
         });
 
-        this.tunnelId = Config.get('tunnel-id');
+        this.tunnelId = opts.tunnelId;
         this.tunnelData = undefined;
     }
 
@@ -32,10 +34,7 @@ class TunnelService {
             return this.tunnelData;
         }
 
-        const token = await new AccountService().refreshToken(force);
-        if (typeof token != 'string') {
-            return token;
-        }
+        const token = await this._accountService.refreshToken(force).catch((e) => { throw e });
 
         try {
             const response = await this.httpClient.get(`/${this.tunnelId}`,
@@ -51,18 +50,15 @@ class TunnelService {
             return this.tunnelData;
         } catch (error) {
             if (error.response == undefined) {
-                return error;
+                throw error;
             }
             const err = error.response?.data?.error;
-            return new ClientError(err ?? ERROR_UNKNOWN);
+            throw new ClientError(err ?? ERROR_UNKNOWN);
         }
     }
 
     async create(tunnelId) {
-        const token = await new AccountService().refreshToken();
-        if (typeof token != 'string') {
-            return token;
-        }
+        const token = await this._accountService.refreshToken().catch((e) => { throw e; });
 
         try {
             const response = await this.httpClient.put(`/${tunnelId}`, {},
@@ -76,22 +72,19 @@ class TunnelService {
             });
             this.tunnelData = response.data;
             this.tunnelId = tunnelId;
-            return true;
+            return response.data;
         } catch (error) {
             if (error.response == undefined) {
-                return error;
+                throw error;
             }
             const err = error.response?.data?.error;
-            const field = error.response?.data?.field;
-            return new ClientError(err ?? ERROR_UNKNOWN, field);
+            const detailed = error.response?.data?.field || error.response?.data?.details;
+            throw new ClientError(err ?? ERROR_UNKNOWN, detailed);
         }
     }
 
     async update(props) {
-        const token = await new AccountService().refreshToken();
-        if (typeof token != 'string') {
-            return token;
-        }
+        const token = await this._accountService.refreshToken().catch((e) => { throw e });
 
         try {
             const response = await this.httpClient.patch(`/${this.tunnelId}`, props,
@@ -104,22 +97,19 @@ class TunnelService {
                 }
             });
             this.tunnelData = response.data;
-            return true;
+            return response.data;
         } catch(error) {
             if (error.response == undefined) {
-                return error;
+                throw error;
             }
             const err = error.response?.data?.error;
-            const field = error.response?.data?.field;
-            return new ClientError(err ?? ERROR_UNKNOWN, field);
+            const detailed = error.response?.data?.field || error.response?.data?.details;
+            throw new ClientError(err ?? ERROR_UNKNOWN, detailed);
         }
     }
 
     async delete() {
-       const token = await new AccountService().refreshToken();
-        if (typeof token != 'string') {
-            return token;
-        }
+        const token = await this._accountService.refreshToken().catch((e) => { throw e });
 
         try {
             const response = await this.httpClient.delete(`/${this.tunnelId}`,
@@ -136,18 +126,15 @@ class TunnelService {
             return true;
         } catch (error) {
             if (error.response == undefined) {
-                return error;
+                throw error;
             }
             const err = error.response?.data?.error;
-            return new ClientError(err ?? ERROR_UNKNOWN);
+            throw new ClientError(err ?? ERROR_UNKNOWN);
         }
     }
 
     async disconnect() {
-       const token = await new AccountService().refreshToken();
-        if (typeof token != 'string') {
-            return token;
-        }
+       const token = await this._accountService.refreshToken().catch((e) => { throw e });
 
         try {
             const response = await this.httpClient.post(`/${this.tunnelId}/disconnect`,
@@ -163,10 +150,10 @@ class TunnelService {
             return response?.data?.result;
         } catch (error) {
             if (error.response == undefined) {
-                return error;
+                throw error;
             }
             const err = error.response?.data?.error;
-            return new ClientError(err ?? ERROR_UNKNOWN);
+            throw new ClientError(err ?? ERROR_UNKNOWN);
         }
     }
 }
