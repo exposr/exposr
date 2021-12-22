@@ -13,10 +13,11 @@ import {
 export const command = 'configure <tunnel-id>';
 export const desc = 'Configure an existing tunnel';
 export const builder = function (yargs) {
-    yargs.command('<tunnel-id> set <options...>', 'Set one or more options', (yargs) => { });
-    yargs.command('<tunnel-id> unset <options...>', 'Unset one or more options', (yargs) => { });
-    yargs.demandCommand();
-    return yargs;
+    return yargs
+        .command('<tunnel-id> set <option..>', 'Set one or more options', (yargs) => { })
+        .command('<tunnel-id> unset <option..>', 'Unset one or more options', (yargs) => {
+        })
+        .demandCommand();
 }
 
 export const handler = async function (argv) {
@@ -28,18 +29,49 @@ export const handler = async function (argv) {
         account: argv['account'],
         tunnelId: argv['tunnel-id'],
     };
- 
+
     switch (cmd) {
         case 'set':
             return configureTunnelHandler(opts, args);
         case 'unset':
-            return unsetHandler(opts, args);
+            return unsetTunnelHandler(opts, args);
         default:
             console.log(`unknown command ${cmd}`);
     }
 }
 
-const unsetHandler = async (opts, args) => {
+const unsetTunnelHandler = async (opts, args) => {
+    const io = new IO(opts.io.output, opts.io.input);
+
+    const parse_fn = (argv) => {
+        return yargs(argv)
+            .command('upstream-url', 'Reset the upstream-url', (yargs) => { })
+            .command('ingress-http-altnames', 'Reset HTTP alternative host names for the HTTP ingress',  (yargs) => { })
+            .demandCommand()
+            .version(false)
+            .wrap(opts?.io?.output?.columns - 1 || 110)
+            .scriptName('exposr tunnel configure <tunnel-id> unset')
+            .parse();
+    };
+
+    const parsed = {};
+    do {
+        const res = parse_fn(args.slice(0, 1));
+        if (res._) {
+            parsed[res._] = null;
+        }
+        args = args.slice(1);
+    } while (args.length != 0);
+
+    const result = await configureTunnel(opts, parsed)
+        .then(() => {
+            io.success(`Tunnel ${opts.tunnelId} configured`);
+            return true;
+        })
+        .catch((e) => {
+            io.error(`${e.message}`);
+        });
+    return result;
 };
 
 export const configureTunnelHandler = async function (opts, args) {
@@ -52,7 +84,7 @@ export const configureTunnelHandler = async function (opts, args) {
                     .positional('url', {
                         required: true,
                         type: 'string',
-                        coerce: validate_url,
+                        coerce: (url) => { return validate_url(url)?.href },
                         description: 'URL of the upstream',
                     })
                     .example('exposr tunnel configure my-tunnel set upstream-url http://example.com');
@@ -127,11 +159,11 @@ export const configureTunnelHandler = async function (opts, args) {
             .demandCommand()
             .version(false)
             .wrap(opts?.io?.output?.columns - 1 || 110)
-            .scriptName('exposr tunnel configure <tunnel-id>')
+            .scriptName('exposr tunnel configure <tunnel-id> set')
             .parse();
     };
 
-    const parsed = {}; 
+    const parsed = {};
     do {
         const res = parse_fn(args.slice(0, 2));
         if (res) {
@@ -148,14 +180,14 @@ export const configureTunnelHandler = async function (opts, args) {
         .catch((e) => {
             io.error(`${e.message}`);
         });
-    return result; 
+    return result;
 }
 
 export const configureTunnel = async (args, config) => {
     const io = new IO(args.io.output, args.io.input);
 
     const configOptions = {
-        'upstream-url': {upstream: { url: config['upstream-url']?.href}},
+        'upstream-url': {upstream: { url: config['upstream-url']}},
         'transport-ws': {transport: { ws: { enabled: config['transport-ws']}}},
         'transport-ssh': {transport: { ssh: { enabled: config['transport-ssh']}}},
         'ingress-http': {ingress: { http: { enabled: config['ingress-http']}}},
@@ -173,7 +205,7 @@ export const configureTunnel = async (args, config) => {
         throw new ClientError(ERROR_NO_TUNNEL);
     }
 
-    const options = Object.keys(configOptions).filter(key => config[key] != undefined)
+    const options = Object.keys(configOptions).filter(key => config[key] !== undefined)
 
     const props = merge.all(
         options.map(key => configOptions[key])
