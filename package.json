@@ -19,7 +19,7 @@
     "dnscache": "^1.0.2",
     "http-parser-js": "^0.5.2",
     "human-readable-ids": "^1.0.4",
-    "log4js": "^6.3.0",
+    "log4js": "^6.4.0",
     "port-numbers": "^6.0.0",
     "ws": "^7.4.6",
     "yargs": "^17.2.1"
