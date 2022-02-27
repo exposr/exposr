@@ -1,4 +1,3 @@
-import IO from '../../io.js';
 import AccountService from '../../service/account-service.js';
 import TunnelService from '../../service/tunnel-service.js';
 import {
@@ -16,7 +15,8 @@ export const builder = function (yargs) {
     })
 }
 export const handler = async function (argv) {
-    const io = new IO(argv.io.output, argv.io.input);
+    const cons = argv.cons;
+    const {success, fail} = cons.logger.log(`Deleting tunnel ${argv['tunnel-id']}...`);
 
     await deleteTunnel({
         io: argv.io,
@@ -25,11 +25,12 @@ export const handler = async function (argv) {
         tunnelId: argv['tunnel-id'],
     })
     .then(() => {
-        io.success(`Tunnel ${argv['tunnel-id']} deleted`);
+        success(`success`);
+        cons.status.success(`Tunnel ${argv['tunnel-id']} deleted`);
     })
     .catch((e) => {
-        io.error(`${e.message}`);
-        console.log(e);
+        fail(`failed (${e.message})`)
+        cons.status.fail(`Failed to delete ${argv['tunnel-id']}`);
     });
 }
 

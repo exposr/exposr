@@ -2,10 +2,8 @@ import { EventEmitter } from 'events';
 import WebSocket from 'ws';
 import UpstreamConnector from './upstream-connector.js';
 import WebSocketTransport from './transport/ws/ws-transport.js';
-import { Logger } from './logger.js';
 import { ClientError } from './utils/errors.js';
-
-const logger = Logger("tunnel-connector");
+import Console from './console/index.js';
 
 export class Tunnel extends EventEmitter {
     constructor(opts) {
@@ -16,6 +14,8 @@ export class Tunnel extends EventEmitter {
             allowInsecure: opts.allowInsecure,
         });
         this.established = false;
+
+        this.logger = new Console().log;
     }
 
     connect(cancelSignal) {
@@ -73,14 +73,14 @@ export class Tunnel extends EventEmitter {
                         err = new ClientError(ERROR_UNKNOWN);
                     }
                 }
-                logger.trace(err);
+                this.logger.trace(err);
                 this.emit('error', err);
             });
         });
 
         ws.once('timeout', () => {
             const err = new ClientError(ERROR_SERVER_TIMEOUT);
-            logger.trace(err);
+            this.logger.trace(err);
             this.emit('error', err);
         })
 
@@ -89,7 +89,7 @@ export class Tunnel extends EventEmitter {
                 socket: ws
             });
             transport.listen((sock) => {
-                logger.trace(`listen new sock paused=${sock.isPaused()}`);
+                this.logger.trace(`listen new sock paused=${sock.isPaused()}`);
                 const upstream = this.upstream = this.upstreamConnector.connect((err, upstreamSock) => {
                     if (err) {
                         sock.destroy();
@@ -105,7 +105,7 @@ export class Tunnel extends EventEmitter {
                     }
                     pipe.pipe(upstreamSock);
 
-                    logger.trace(`upstream connected paused=${sock.isPaused()}`);
+                    this.logger.trace(`upstream connected paused=${sock.isPaused()}`);
                     sock.accept();
                 });
 
@@ -115,7 +115,6 @@ export class Tunnel extends EventEmitter {
                 });
 
                 sock.once('close', () => {
-                    console.log("CLOSE2");
                     upstream.unpipe();
                     upstream.destroy();
                 });

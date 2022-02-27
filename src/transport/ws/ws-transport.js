@@ -3,7 +3,7 @@ import { ECONNREFUSED, EINPROGRESS, EMFILE, EPIPE, ETIMEDOUT } from 'constants';
 import { EventEmitter } from 'events';
 import { Duplex } from 'stream';
 import WebSocket from 'ws';
-import { Logger } from '../../logger.js';
+import Console from '../../console/index.js';
 import CustomError from '../../utils/errors.js';
 
 // Multiplexes multiple streams over one websocket connection
@@ -43,7 +43,7 @@ class WebSocketTransport extends EventEmitter {
 
         this.openSockets = {};
         this._eventBus = new EventEmitter();
-        this.logger = Logger("ws-transport")
+        this.logger = new Console().logger;
         this.logger.addContext("tunnel", this._tunnelId);
 
         this._socketStream.on('data', (chunk) => {
@@ -62,7 +62,7 @@ class WebSocketTransport extends EventEmitter {
         this._alive = true;
         this._keepAlive = setInterval(() => {
             if (this._alive === false) {
-                this.logger.info("No heartbeat for 30000ms");
+                this.logger.debug("No heartbeat for 30000ms");
                 return this.destroy();
             }
             this._alive = false;
@@ -99,7 +99,7 @@ class WebSocketTransport extends EventEmitter {
         } else if (header.type === WebSocketTransport.MESSAGE_RESUME) {
             this._resumeChannel(header.channel);
         } else {
-            this.logger.debug(`Unknown type ${header.type} header=${JSON.stringify(header)}`)
+            this.logger.debug(`Unknown type ${header.type} header=${JSON.stringify(header)}`);
         }
     }
 
@@ -140,7 +140,7 @@ class WebSocketTransport extends EventEmitter {
     _channelData(fd, data, length) {
         const socket = this.openSockets[fd];
         if (socket === undefined) {
-            this.logger.debug(`data on non-connected channel fd=${fd}`)
+            this.logger.debug(`data on non-connected channel fd=${fd}`);
             this.logger.isTraceEnabled() &&
                 this.logger.trace({
                     msg: 'data on non-connected channel',

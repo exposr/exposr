@@ -1,7 +1,6 @@
 import merge from 'deepmerge';
 import yargs from 'yargs';
 import { validate_array, validate_bool, validate_url } from '../../command-execute.js';
-import IO from '../../io.js';
 import AccountService from '../../service/account-service.js';
 import TunnelService from '../../service/tunnel-service.js';
 import {
@@ -24,7 +23,7 @@ export const handler = async function (argv) {
     const args = argv._.slice(3);
     const cmd = argv._[2];
     const opts = {
-        io: argv.io,
+        cons: argv.cons,
         server: argv['server'],
         account: argv['account'],
         tunnelId: argv['tunnel-id'],
@@ -41,7 +40,6 @@ export const handler = async function (argv) {
 }
 
 const unsetTunnelHandler = async (opts, args) => {
-    const io = new IO(opts.io.output, opts.io.input);
 
     const parse_fn = (argv) => {
         return yargs(argv)
@@ -49,7 +47,7 @@ const unsetTunnelHandler = async (opts, args) => {
             .command('ingress-http-altnames', 'Reset HTTP alternative host names for the HTTP ingress',  (yargs) => { })
             .demandCommand()
             .version(false)
-            .wrap(opts?.io?.output?.columns - 1 || 110)
+            .wrap(process.stdout.columns - 1 || 110)
             .scriptName('exposr tunnel configure <tunnel-id> unset')
             .parse();
     };
@@ -63,19 +61,30 @@ const unsetTunnelHandler = async (opts, args) => {
         args = args.slice(1);
     } while (args.length != 0);
 
-    const result = await configureTunnel(opts, parsed)
-        .then(() => {
-            io.success(`Tunnel ${opts.tunnelId} configured`);
-            return true;
-        })
-        .catch((e) => {
-            io.error(`${e.message}`);
-        });
-    return result;
+    const cons = opts.cons;
+
+    let result = true;
+    for (const key of Object.keys(parsed)) {
+        const {success, fail} = cons.logger.log(`Unsetting ${key}...`);
+        try {
+            await configureTunnel(opts, {key: null});
+            success(`done`);
+        } catch (e) {
+            fail(`failed (${e.message})`);
+            result = false;
+        }
+    }
+
+    if (result) {
+        cons.status.success(`Tunnel ${opts.tunnelId} configured`);
+        return result;
+    } else {
+        cons.status.fail(`Failed to configure tunnel ${opts.tunnelId}`);
+        return result;
+    }
 };
 
-export const configureTunnelHandler = async function (opts, args) {
-    const io = new IO(opts.io.output, opts.io.input);
+export const configureTunnelHandler = async (opts, args) => {
 
     const parse_fn = (argv) => {
         return yargs(argv)
@@ -84,14 +93,14 @@ export const configureTunnelHandler = async function (opts, args) {
                     .positional('url', {
                         required: true,
                         type: 'string',
-                        coerce: (url) => { return validate_url(url)?.href },
+                        coerce: (url) => { return validate_url(url)?.href; },
                         description: 'URL of the upstream',
                     })
                     .example('exposr tunnel configure my-tunnel set upstream-url http://example.com');
             }, (argv) => {
                 argv['value'] = argv['url'];
             })
-            .command('transport-ws <enabled>', 'Enable/disable the WebSocket transport layer',  (yargs) => {
+            .command('transport-ws <enabled>', 'Enable/disable the WebSocket transport layer', (yargs) => {
                 yargs
                     .positional('enabled', {
                         required: true,
@@ -104,7 +113,7 @@ export const configureTunnelHandler = async function (opts, args) {
             }, (argv) => {
                 argv['value'] = argv['enabled'];
             })
-            .command('transport-ssh <enabled>', 'Enable/disable the SSH transport layer',  (yargs) => {
+            .command('transport-ssh <enabled>', 'Enable/disable the SSH transport layer', (yargs) => {
                 yargs
                     .positional('enabled', {
                         required: true,
@@ -117,7 +126,7 @@ export const configureTunnelHandler = async function (opts, args) {
             }, (argv) => {
                 argv['value'] = argv['enabled'];
             })
-            .command('ingress-http <enabled>', 'Enable/disable the HTTP ingress',  (yargs) => {
+            .command('ingress-http <enabled>', 'Enable/disable the HTTP ingress', (yargs) => {
                 yargs
                     .positional('enabled', {
                         required: true,
@@ -130,7 +139,7 @@ export const configureTunnelHandler = async function (opts, args) {
             }, (argv) => {
                 argv['value'] = argv['enabled'];
             })
-            .command('ingress-http-altnames <domains>', 'Set HTTP alternative host names for the HTTP ingress',  (yargs) => {
+            .command('ingress-http-altnames <domains>', 'Set HTTP alternative host names for the HTTP ingress', (yargs) => {
                 yargs
                     .positional('domains', {
                         required: true,
@@ -140,10 +149,10 @@ export const configureTunnelHandler = async function (opts, args) {
                     })
                     .example('exposr tunnel configure my-tunnel set ingress-http-altnames sub.example.com')
                     .example('exposr tunnel configure my-tunnel set ingress-http-altnames sub.example.com,sub2.example.com');
-            }, (argv) =>  {
+            }, (argv) => {
                 argv['value'] = argv['domains'];
             })
-            .command('ingress-sni <enabled>', 'Enable/disable the SNI ingress',  (yargs) => {
+            .command('ingress-sni <enabled>', 'Enable/disable the SNI ingress', (yargs) => {
                 yargs
                     .positional('enabled', {
                         required: true,
@@ -158,7 +167,7 @@ export const configureTunnelHandler = async function (opts, args) {
             })
             .demandCommand()
             .version(false)
-            .wrap(opts?.io?.output?.columns - 1 || 110)
+            .wrap(process.stdout.columns - 1 || 110)
             .scriptName('exposr tunnel configure <tunnel-id> set')
             .parse();
     };
@@ -172,19 +181,31 @@ export const configureTunnelHandler = async function (opts, args) {
         args = args.slice(2);
     } while (args.length != 0);
 
-    const result = await configureTunnel(opts, parsed)
-        .then(() => {
-            io.success(`Tunnel ${opts.tunnelId} configured`);
-            return true;
-        })
-        .catch((e) => {
-            io.error(`${e.message}`);
-        });
-    return result;
+    const cons = opts.cons;
+
+    let result = true;
+    for (const key of Object.keys(parsed)) {
+        const value = parsed[key];
+        const {success, fail} = cons.logger.log(`Setting ${key} to '${value}'...`);
+        try {
+            await configureTunnel(opts, {[key]: value});
+            success(`done`);
+        } catch (e) {
+            fail(`failed (${e.message})`);
+            result = false;
+        }
+    }
+
+    if (result) {
+        cons.status.success(`Tunnel ${opts.tunnelId} configured`);
+        return result;
+    } else {
+        cons.status.fail(`Failed to configure tunnel ${opts.tunnelId}`);
+        return result;
+    }
 }
 
 export const configureTunnel = async (args, config) => {
-    const io = new IO(args.io.output, args.io.input);
 
     const configOptions = {
         'upstream-url': {upstream: { url: config['upstream-url']}},
@@ -210,10 +231,6 @@ export const configureTunnel = async (args, config) => {
     const props = merge.all(
         options.map(key => configOptions[key])
     );
-
-    options.forEach((opt) => {
-        io.info(`Setting ${opt} to ${config[opt]}`);
-    })
 
     return tunnelService.update(props);
 }

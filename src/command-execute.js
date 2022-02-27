@@ -35,7 +35,7 @@ export const validate_array = (arrayish) => {
     return array;
 }
 
-const parse = (args, input, output, callback) => {
+const parse = (args, cons, callback) => {
     const version = Version.version;
     let versionStr = `version: ${version.version} (pkg ${version.package})`;
     versionStr += version?.build?.commit ? `\ncommit: ${version?.build?.commit}/${version?.build?.branch}` : '';
@@ -46,10 +46,7 @@ const parse = (args, input, output, callback) => {
         .version(versionStr)
         .middleware([
             (argv) => {
-                argv.io = {
-                    input,
-                    output,
-                };
+                argv.cons = cons
             }
         ], true)
         .command('account', 'Server account management', (yargs) => {
@@ -87,19 +84,19 @@ const parse = (args, input, output, callback) => {
             },
         })
         .demandOption('server')
-        .wrap(output.columns - 1 || 110)
+        .wrap(process.stdout.columns - 1 || 110)
         .scriptName('exposr')
         .parse(process.argv.slice(2), callback);
 }
 
-export default async function commandExecute(args, input, output) {
+export default async function commandExecute(args, cons) {
     const cb = (err, _, out) => {
         if (process.env.NODE_ENV === 'test') {
             return;
         }
 
         if (out) {
-            output.write(out + os.EOL);
+            process.stdout.write(out + os.EOL);
         }
         if (err) {
             process.exit(-1);
@@ -108,6 +105,6 @@ export default async function commandExecute(args, input, output) {
         }
     };
 
-    const argv = await parse(args, input, output, cb);
+    const argv = await parse(args, cons, cb);
     return argv;
 }; 

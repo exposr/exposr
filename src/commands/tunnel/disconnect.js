@@ -1,4 +1,3 @@
-import IO from '../../io.js';
 import AccountService from '../../service/account-service.js';
 import TunnelService from '../../service/tunnel-service.js';
 import { ClientError, ERROR_NO_ACCOUNT, ERROR_NO_TUNNEL } from '../../utils/errors.js';
@@ -12,22 +11,25 @@ export const builder = function (yargs) {
 }
 
 export const handler = async function (argv) {
-    const io = new IO(argv.io.output, argv.io.input);
+    const cons = argv.cons;
 
+    const {success, fail, warn} = cons.logger.log(`Disconnecting tunnel ${argv['tunnel-id']}...`);
     await disconnectTunnel({
-        io: argv.io,
+        cons,
         server: argv['server'],
         account: argv['account'],
         tunnelId: argv['tunnel-id'],
     }).then((disconnected) => {
         if (disconnected) {
-            io.success(`Tunnel ${argv['tunnel-id']} disconnected`);
+            success("disconnected");
+            cons.status.success(`Tunnel ${argv['tunnel-id']} disconnected`);
         } else {
-            io.failure(`Tunnel ${argv['tunnel-id']} not disconnected`);
+            warn("not disconnected")
+            cons.status.fail(`Tunnel ${argv['tunnel-id']} not disconnected`);
         }
     })
     .catch((e) => {
-        io.error(`${e.message}`);
+        fail(`${e.message}`);
     });
 }
 

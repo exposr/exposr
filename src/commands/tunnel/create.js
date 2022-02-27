@@ -1,5 +1,4 @@
 import hri from 'human-readable-ids';
-import IO from '../../io.js';
 import AccountService from '../../service/account-service.js';
 import TunnelService from '../../service/tunnel-service.js';
 import {
@@ -15,24 +14,25 @@ export const builder = function (yargs) {
     })
 }
 export const handler = async function (argv) {
-    const io = new IO(argv.io.output, argv.io.input);
+    const cons = argv.cons;
+    const {success, fail} = cons.logger.log(`Creating tunnel...`);
 
     await createTunnel({
-        io: argv.io,
+        cons,
         server: argv['server'],
         account: argv['account'],
         tunnelId: argv['tunnel-id'],
     }).then((tunnel) => {
-        io.success(`Tunnel ${tunnel.id} created`);
+        success(`success (${tunnel.id})`);
+        cons.status.success(`Created tunnel ${tunnel.id}`);
     })
     .catch((e) => {
-        io.error(`${e.message}`);
+        fail(`failed (${e.message})`);
+        cons.status.fail(`Could not create tunnel`);
     });
 }
 
 export const createTunnel = async (opts) => {
-    const io = new IO(opts.io.output, opts.io.input);
-
     const accountService = new AccountService(opts);
 
     if (!accountService.account?.account_id) {

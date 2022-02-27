@@ -1,6 +1,4 @@
 import AccountService from '../../service/account-service.js';
-import { ClientError } from '../../utils/errors.js';
-import IO from '../../io.js';
 
 export const command = 'create';
 export const desc = 'Create account';
@@ -8,14 +6,19 @@ export const builder = function (yargs) {
     return yargs;
 }
 export const handler = async function (argv) {
-    const io = new IO(argv.io.output, argv.io.input);
+    const cons = argv.cons;
+
+    const {success, fail} = cons.log.log("Creating account...");
+
     const account = await createAccount({
-        io: argv.io,
+        cons,
         server: argv['server'],
     }).then((account) => {
-        io.success(`Created account ${account.account_id_hr}`);
+        success(`success`);
+        cons.status.success(`Created account ${account.account_id_hr}`);
     }).catch((e) => {
-        io.failure(`Failed to create account: ${e.message}`);
+        fail(`failed (${e.message})`);
+        cons.status.fail(`Could not create account`);
     });
     return account;
 }

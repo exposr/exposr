@@ -1,5 +1,4 @@
-import setTimeout from 'timers/promises';
-import IO from '../../io.js';
+import { setTimeout } from 'timers/promises';
 import TunnelService from '../../service/tunnel-service.js';
 import HttpTransformer from '../../transformer/http-transformer.js';
 import Tunnel from '../../tunnel.js';
@@ -27,7 +26,7 @@ export const builder = function (yargs) {
             describe: 'Tunnel to create, if no tunnel name is given a random identifier is allocated'
         })
         .positional('upstream-url', {
-            describe: 'Target URL to connect to' 
+            describe: 'Target URL to connect to'
         })
         .positional('options', {
             default: [],
@@ -74,7 +73,7 @@ export const builder = function (yargs) {
 
 }
 export const handler = async function (argv) {
-    const io = new IO(argv.io.output, argv.io.input);
+    const cons = argv.cons;
 
     // The following hacks are to rearrange the arguments
     // because we're doing things not properly supported by yargs
@@ -107,38 +106,44 @@ export const handler = async function (argv) {
 
     let accountId = argv['account'];
     if (!accountId) {
-        io.warn(`No account ID provided, creating account`);
+        const {success, fail} = cons.logger.log(`No account ID provided, creating account...`);
         await createAccount({
-            io: argv.io,
+            cons: argv.cons,
             server: argv.server,
         }).then((account) => {
             accountId = account?.account_id_hr;
-            io.info(`Created account ${accountId}`);
+            success(`success (${accountId})`);
+            cons.status.success(`Created account ${accountId}`);
         }).catch((e) => {
-            io.error(e.message);
+            fail(`failed (${e.message})`);
+            cons.status.fail('Failed to create account')
         });
     }
 
     let tunnelId = argv['tunnel-id'];
     let autoCreated = false;
     if (!tunnelId) {
+        const {success, fail} = cons.logger.log(`Creating tunnel...`);
         const tunnel = await createTunnel({
-            io: argv.io,
+            cons: argv.cons,
+            account: accountId,
             server: argv.server,
         }).then((tunnel) => {
             autoCreated = true;
             tunnelId = tunnel.id;
-            io.success(`Tunnel ${tunnelId} created`);
+            success(`success (${tunnelId})`);
+            cons.status.success(`Created tunnel ${tunnelId}`);
         }).catch((e) => {
-            io.error(e.message);
+            fail(`failed (${e.message})`);
+            cons.status.fail('Failed to create tunnel')
         });
     }
 
     const opts = {
-        io: argv.io,
+        cons: argv.cons,
         server: argv['server'],
-        account: accountId, 
-        tunnelId: tunnelId, 
+        account: accountId,
+        tunnelId: tunnelId,
         insecure: argv['insecure'],
         'http-mode': argv['http-mode'],
         'http-header-replace': argv['http-header-replace'],
@@ -151,26 +156,29 @@ export const handler = async function (argv) {
 
     await connectTunnel(opts)
         .catch((e) => {
-            io.error(`${e.message}`);
+            cons.status.fail(`${e.message}`);
         });
 
     if (autoCreated) {
+        const {warn, fail} = cons.logger.log(`Deleting tunnel ${tunnelId}...`);
         await deleteTunnel(opts)
             .then(() => {
-                io.success(`Tunnel ${tunnelId} deleted`);
+                warn('done');
             })
             .catch((e) => {
-                io.error(`Could not delete tunnel ${e.message}`);
+                fail(`failed (${e.message})`);
+                cons.status.fail('Failed to delete tunnel')
             });
     }
 
+    cons.status.success(`Tunnel ${tunnelId} disconnected`);
 }
 
 export const connectTunnel = async (args) => {
-    const io = new IO(args.io.output, args.io.input);
+    const cons = args.cons;
 
     const rewriteHeaders = args['http-header-rewrite'] || [];
-    const replaceHeaders = args['http-header-replace'] || {};
+    const replaceHeaders = args['http-header-replace'] || {};
     const transformEnabled = args['http-mode'] && (rewriteHeaders.length > 0 || Object.keys(replaceHeaders).length > 0);
     const transformerStream = (upstream, downstream) => {
         if (transformEnabled && upstream && downstream) {
@@ -179,9 +187,9 @@ export const connectTunnel = async (args) => {
     }
 
     if (args['http-mode']) {
-        io.info(`Local HTTP parsing: ${args['http-mode'] ? 'enabled': 'disabled'}`);
-        io.info(`HTTP header rewrite: ${rewriteHeaders.join(", ")}`);
-        io.info(`HTTP header replace: ${Object.entries(replaceHeaders).map(kv => `${kv[0]}=${kv[1]}`).join(", ") }`);
+        cons.log.info(`Local HTTP parsing: ${args['http-mode'] ? 'enabled': 'disabled'}`);
+        cons.log.info(`HTTP header rewrite: ${rewriteHeaders.join(", ")}`);
+        cons.log.info(`HTTP header replace: ${Object.entries(replaceHeaders).map(kv => `${kv[0]}=${kv[1]}`).join(", ") }`);
     }
 
     await maintainTunnel({
@@ -191,7 +199,7 @@ export const connectTunnel = async (args) => {
 }
 
 const maintainTunnel = async (args) => {
-    const io = new IO(args.io.output, args.io.input);
+    const cons = args.cons;
 
     const isFatal = (e) => {
         const fatalErrors = [
@@ -206,11 +214,12 @@ const maintainTunnel = async (args) => {
 
     let retryDelay = 1000;
 
-    io.info('Establishing tunnel...');
+    cons.status.spinner("Connecting...")
     while (true) {
+        const {success, fail} = cons.logger.log('Establishing tunnel...');
         const [error, res] = await establishTunnel(args)
             .then(({tunnel, config}) => {
-                io.info(`Tunnel established to ${config.upstream.url}`);
+                success(`connected to ${config.upstream.url}`);
                 Object.keys(config.ingress).forEach((ingress) => {
                     const url = config.ingress[ingress]?.url;
                     const urls = config.ingress[ingress]?.urls;
@@ -218,12 +227,13 @@ const maintainTunnel = async (args) => {
                         urls = [url];
                     }
                     urls.forEach(url => {
-                        io.info(`Ingress ${ingress.toUpperCase()}: ${url}`);
+                        cons.log.info(`Ingress ${ingress.toUpperCase()}: ${url}`);
                     });
                 });
                 return [undefined, {tunnel, config}];
             })
             .catch((e) => {
+                fail(`failed (${e.message})`);
                 const reconnect = !(e && isFatal(e));
                 return [{reconnect, e}]
             });
@@ -231,7 +241,7 @@ const maintainTunnel = async (args) => {
         if (error) {
             const {reconnect, e} = error;
             if (!reconnect) {
-                e && io.error(`Failed to establish tunnel: ${e.message}`);
+                e && cons.status.fail(`Failed to establish tunnel: ${e.message}`);
                 break;
             }
 
@@ -256,11 +266,13 @@ const maintainTunnel = async (args) => {
 
         const {tunnel, config} = res;
 
+        cons.status.success(`Tunnel ${config.id} connected to ${config.upstream.url}`);
         const cancelSignal = new AbortController();
         const cancelDisconnect = new AbortController();
         const disconnectWait = new Promise((resolve) => {
             const closeHandler = () => {
-                io.info("Tunnel connection lost, re-connecting");
+                cons.log.warn(`Lost connection to tunnel ${config.id}`);
+                cons.status.spinner("Reconnecting...")
                 resolve('reconnect');
             };
             tunnel.once('close', closeHandler);
@@ -269,9 +281,9 @@ const maintainTunnel = async (args) => {
                 resolve();
             }, {
                 once: true,
-            }); 
+            });
         });
- 
+
         const result = await Promise.race([
            signalWait(['SIGINT', 'SIGTERM'], cancelSignal.signal, 'signal'),
            disconnectWait,

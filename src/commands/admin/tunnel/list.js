@@ -8,18 +8,18 @@ export const builder = function (yargs) {
 }
 export const handler = async function (argv) {
     await listTunnels({
-        io: argv.io,
+        cons: argv.cons,
         apiKey: argv['api-key'],
         server: argv['server'],
     });
 }
 
 const listTunnels = async (opts) => {
-    const output = opts.io.output; 
-    const input = opts.io.input; 
+    const output = process.stdout; 
+    const input = process.stdin;
 
     const adminService = new AdminService(opts);
-    const count = output.rows - 1 || 10;
+    const count = output.rows - 1 || 10;
 
     let cursor, tunnels;
     do {

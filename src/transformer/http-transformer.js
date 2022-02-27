@@ -1,7 +1,7 @@
 import stream from 'stream';
 import HTTPParser from 'http-parser-js';
 import { URL } from 'url';
-import { Logger } from '../logger.js';
+import { Logger } from '../console/logger.js';
 
 class HttpTransformer extends stream.Transform {
 
@@ -14,7 +14,7 @@ class HttpTransformer extends stream.Transform {
         try {
             this.downstreamUrl = new URL(downstreamUrl);
         } catch {}
-        this.logger = Logger('http-transformer');
+        this.logger = Logger();
         this.enabled = true;
 
         const httpParser = this.httpParser = new HTTPParser.HTTPParser();
