@@ -309,7 +309,7 @@ const establishTunnel = async (args) => {
         throw new ClientError(ERROR_NO_TUNNEL_ENDPOINT);
     }
 
-    if (config.ingress?.http?.url == undefined) {
+    if (config.upstream?.url == undefined) {
         throw new ClientError(ERROR_NO_TUNNEL_UPSTREAM);
     }
 
@@ -318,7 +318,7 @@ const establishTunnel = async (args) => {
     }
 
     const opts = {
-        upstreamUrl: config.ingress.http.url,
+        upstreamUrl: config.upstream.url,
         websocketUrl: config.transport.ws.url,
         transformerStream: () => {
             return args.transformerStream(config.upstream?.url, config.ingress?.http?.url)
