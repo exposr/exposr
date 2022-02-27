@@ -27,6 +27,7 @@ release.publish:
 	git push --follow-tags origin
 
 package.build:
+	yarn install --no-default-rc --frozen-lockfile
 	yarn pack --no-default-rc --production --frozen-lockfile --filename $(package_name)
 
 # Builder image
