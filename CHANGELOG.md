@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.5.0](https://github.com/exposr/exposr-cli/compare/v0.4.0...v0.5.0) (2022-02-27)
+
+
+### ⚠ BREAKING CHANGES
+
+* implement a new fancy console 💄
+* new command structure
+
+### Features
+
+* implement a new fancy console 💄 ([3128a64](https://github.com/exposr/exposr-cli/commit/3128a64307ed5463b172b1fdc08f9de8d94cd363))
+* implement unset sub-command to tunnel configure ([50f64b4](https://github.com/exposr/exposr-cli/commit/50f64b4388a87b8edd57922f0f6a0e5fdce00f50))
+
+
+### Bug Fixes
+
+* logger in http-transformer ([2018719](https://github.com/exposr/exposr-cli/commit/201871972b87bf6b821fe719a867da90e5e20346))
+* only print tunnel id if there is one ([9ff4c65](https://github.com/exposr/exposr-cli/commit/9ff4c6573ad97c83c8ff71e1af639a4fd8576f67))
+* wrong url passed to tunnel connector ([aaf3ee1](https://github.com/exposr/exposr-cli/commit/aaf3ee18e6ef160aba4e93a8f8e5671d56e4b048))
+
+
+* new command structure ([01ea4fb](https://github.com/exposr/exposr-cli/commit/01ea4fb0e0db582fd15fdf6946538d7eae88232a))
+
 ## [0.4.0](https://github.com/exposr/exposr-cli/compare/v0.3.0...v0.4.0) (2021-08-18)
 
 
