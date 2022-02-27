@@ -79,7 +79,7 @@ const unsetTunnelHandler = async (opts, args) => {
         cons.status.success(`Tunnel ${opts.tunnelId} configured`);
         return result;
     } else {
-        cons.status.fail(`Failed to configure tunnel ${opts.tunnelId}`);
+        cons.status.fail(`Failed to configure tunnel ${opts.tunnelId ? opts.tunnelId : ''}`);
         return result;
     }
 };
@@ -200,7 +200,7 @@ export const configureTunnelHandler = async (opts, args) => {
         cons.status.success(`Tunnel ${opts.tunnelId} configured`);
         return result;
     } else {
-        cons.status.fail(`Failed to configure tunnel ${opts.tunnelId}`);
+        cons.status.fail(`Failed to configure tunnel ${opts.tunnelId ? opts.tunnelId : ''}`);
         return result;
     }
 }
