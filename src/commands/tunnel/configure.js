@@ -1,6 +1,6 @@
 import merge from 'deepmerge';
 import yargs from 'yargs';
-import { validate_array, validate_bool, validate_url } from '../../command-execute.js';
+import { validate_array, validate_bool, validate_url } from '../../app.js';
 import AccountService from '../../service/account-service.js';
 import TunnelService from '../../service/tunnel-service.js';
 import {

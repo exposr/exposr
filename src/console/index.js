@@ -18,13 +18,13 @@ class Console {
         delete Console.instance;
     }
 
-    async init() {
+    async init(interactive) {
 
         const stdoutOutput = (str, status) => {
             process.stdout.write(`${str}${status != undefined ? '\n' : ''}`);
         };
 
-        if (process.stdout.isTTY) {
+        if (interactive && process.stdout.isTTY) {
             const {update, refresh} =  (await createApp());
             this._update = update;
             this._refresh = refresh;

@@ -2,6 +2,7 @@ import yargs from 'yargs';
 import os from 'os';
 import { URL } from 'url';
 import Version from './version.js';
+import Console from './console/index.js';
 import { commands as adminCommands } from './commands/admin/index.js';
 import { commands as accountCommands } from './commands/account/index.js';
 import { commands as tunnelCommands } from './commands/tunnel/index.js';
@@ -45,8 +46,9 @@ const parse = (args, cons, callback) => {
         .env("EXPOSR")
         .version(versionStr)
         .middleware([
-            (argv) => {
-                argv.cons = cons
+            async (argv) => {
+                await cons.init(argv['non-interactive'] == false);
+                argv.cons = cons;
             }
         ], true)
         .command('account', 'Server account management', (yargs) => {
@@ -83,13 +85,19 @@ const parse = (args, cons, callback) => {
                 return typeof url == 'string' ? new URL(url) : url;
             },
         })
+        .option('non-interactive', {
+            type: 'boolean',
+            default: false,
+            description: 'Use non-interactive console mode',
+        })
         .demandOption('server')
         .wrap(process.stdout.columns - 1 || 110)
         .scriptName('exposr')
         .parse(process.argv.slice(2), callback);
 }
 
-export default async function commandExecute(args, cons) {
+export default async function run(args) {
+
     const cb = (err, _, out) => {
         if (process.env.NODE_ENV === 'test') {
             return;
@@ -105,6 +113,8 @@ export default async function commandExecute(args, cons) {
         }
     };
 
-    const argv = await parse(args, cons, cb);
-    return argv;
+    const cons = new Console();
+    await parse(args, cons, cb);
+    await cons.shutdown();
+    return 0;
 }; 

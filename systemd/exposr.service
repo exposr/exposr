@@ -19,5 +19,5 @@ ExecStartPre=-/usr/bin/docker rm %n
 ExecStartPre=-/usr/bin/docker pull exposr/exposr:${VERSION}
 ExecStart=/usr/bin/docker run --rm --name %n \
   -t \
-  exposr/exposr:${VERSION} tunnel connect ${TUNNEL_NAME} ${TUNNEL_TARGET}
+  exposr/exposr:${VERSION} --non-interactive tunnel connect ${TUNNEL_NAME} ${TUNNEL_TARGET}
 ExecStop=/usr/bin/docker stop -t 2 %n
