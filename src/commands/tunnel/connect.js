@@ -17,7 +17,7 @@ import { configureTunnelHandler } from './configure.js';
 import { createTunnel } from './create.js';
 import { deleteTunnel } from './delete.js';
 
-export const command = 'connect [tunnel-id] <upstream-url> [options..]';
+export const command = 'connect [tunnel-id] [upstream-url] [options..]';
 export const desc = 'Establish tunnel using the WebSocket transport';
 export const builder = function (yargs) {
     return yargs
@@ -26,7 +26,7 @@ export const builder = function (yargs) {
             describe: 'Tunnel to create, if no tunnel name is given a random identifier is allocated'
         })
         .positional('upstream-url', {
-            describe: 'Target URL to connect to'
+            describe: 'Target URL to connect to, if not given will use already configured target'
         })
         .positional('options', {
             default: [],
@@ -77,22 +77,41 @@ export const handler = async function (argv) {
 
     // The following hacks are to rearrange the arguments
     // because we're doing things not properly supported by yargs
-    if (argv.options.length % 2 && argv.tunnelId) {
-        argv.options.push(argv.tunnelId);
-        delete argv['tunnelId'];
-        delete argv['tunnel-id'];
+    if (argv.options.length % 2) {
+        argv.options.unshift(argv.upstreamUrl);
+        delete argv['upstream-url'];
+        delete argv['upstreamUrl'];
     }
-    if (argv['upstream-url'] && argv['tunnel-id']) {
-        [argv['upstream-url'], argv['tunnel-id']] = [argv['tunnel-id'], argv['upstream-url']];
-        argv.upstreamUrl = argv['upstream-url'];
-        argv.tunnelId = argv['tunnelId'];
+
+    if (argv['tunnel-id'] && !argv['upstream-url']) {
+        try {
+            new URL(argv['tunnel-id']);
+            argv['upstream-url'] = argv['upstreamUrl'] = argv['tunnel-id'];
+            argv['tunnel-id'] = argv['tunnelId'] = undefined;
+        } catch (e) {
+        }
+    }
+
+    // Handle the case when only a tunnel id is given
+    if (argv['upstream-url']) {
+        try {
+            new URL(argv['upstream-url']);
+        } catch (e) {
+            // Failed to parse as an URL, assume it's a tunnel id
+            argv['tunnel-id'] = argv['upstream-url'];
+            argv.tunnelId = argv['upstream-url'];
+            argv['upstream-url'] = argv.upstreamUrl = undefined;
+        }
     }
 
     const configArgs = [
-        'upstream-url',
-        argv['upstream-url'],
         ...argv.options,
     ];
+
+    if (argv['upstream-url']) {
+        configArgs.push('upstream-url');
+        configArgs.push(argv['upstream-url']);
+    }
 
     if (!configArgs.includes('ingress-http') && argv['upstream-url']?.startsWith('http')) {
         configArgs.push('ingress-http');
