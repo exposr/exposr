@@ -5,31 +5,53 @@ import {
     ClientError,
     ERROR_NO_ACCOUNT
 } from '../../utils/errors.js';
+import { configureTunnelHandler } from './configure.js';
 
-export const command = 'create [tunnel-id]';
+export const command = 'create [tunnel-id] [options..]';
 export const desc = 'Create a new tunnel';
 export const builder = function (yargs) {
-    return yargs.positional('tunnel-id', {
-        describe: 'Tunnel to create, if no tunnel name is given a random identifier is allocated'
-    })
+    return yargs
+        .positional('tunnel-id', {
+            describe: 'Tunnel to create, if no tunnel name is given a random identifier is allocated'
+        })
+        .positional('options', {
+            default: [],
+        });
 }
 export const handler = async function (argv) {
     const cons = argv.cons;
-    const {success, fail} = cons.logger.log(`Creating tunnel...`);
 
+    if (argv.options.length % 2) {
+        argv.options.unshift(argv.tunnelId);
+        delete argv['tunnelId'];
+        delete argv['tunnel-id'];
+    }
+
+    const {success, fail} = cons.logger.log(`Creating tunnel...`);
     await createTunnel({
         cons,
         server: argv['server'],
         account: argv['account'],
         tunnelId: argv['tunnel-id'],
-    }).then((tunnel) => {
+    }).then(async (tunnel) => {
         success(`success (${tunnel.id})`);
+
+        if (argv.options.length > 0) {
+            await configureTunnelHandler({
+                cons,
+                server: argv['server'],
+                account: argv['account'],
+                tunnelId: argv['tunnel-id'],
+            }, argv.options);
+        }
+
         cons.status.success(`Created tunnel ${tunnel.id}`);
     })
     .catch((e) => {
         fail(`failed (${e.message})`);
         cons.status.fail(`Could not create tunnel`);
     });
+
 }
 
 export const createTunnel = async (opts) => {
