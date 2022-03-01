@@ -22,6 +22,10 @@ To expose/proxy a host different than localhost
 
     > docker run --rm -ti exposr/exposr:latest -s https://exposr.example.com tunnel connect https://example.net
 
+# Demo
+
+![](https://exposr.github.io/docs/img/demo/exposr-demo-20220301.svg)
+
 # Usage
 
 ## Account management
