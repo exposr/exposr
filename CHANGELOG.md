@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.6.0](https://github.com/exposr/exposr-cli/compare/v0.5.0...v0.6.0) (2022-03-01)
+
+
+### ⚠ BREAKING CHANGES
+
+* rename upstream to target
+
+### Features
+
+* add --non-interactive flag to disable interactive console ([e487abf](https://github.com/exposr/exposr-cli/commit/e487abf264ff9c3012c161befa61601fb11231c0))
+* don't require target url for the tunnel connect command ([3856600](https://github.com/exposr/exposr-cli/commit/385660051bb5da0e70960e2bc6ee5f98805f03e0))
+* print account number in log message on account creation ([2dd402e](https://github.com/exposr/exposr-cli/commit/2dd402e4989f6f0d61081ba2e1d3ac9942dd22d1))
+* take optional configuration options for the tunnel create command ([28c87c8](https://github.com/exposr/exposr-cli/commit/28c87c8c5703533cdcc96c74b28519499828aef9))
+
+
+* rename upstream to target ([1bea06d](https://github.com/exposr/exposr-cli/commit/1bea06d65b5974ebfbd45524e3a0c93d465084c0))
+
 ## [0.5.0](https://github.com/exposr/exposr-cli/compare/v0.4.0...v0.5.0) (2022-02-27)
 
 
