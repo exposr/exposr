@@ -14,7 +14,7 @@ export const handler = async function (argv) {
         cons,
         server: argv['server'],
     }).then((account) => {
-        success(`success`);
+        success(`success (${account.account_id_hr})`);
         cons.status.success(`Created account ${account.account_id_hr}`);
     }).catch((e) => {
         fail(`failed (${e.message})`);
