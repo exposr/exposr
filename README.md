@@ -35,8 +35,8 @@ Accounts can be created on servers with public account creation enabled.
 Tunnel management can be accessed under the command `exposr tunnel`
 
     Commands:
-      exposr tunnel create [tunnel-id]                              Create a new tunnel
-      exposr tunnel connect [tunnel-id] <upstream-url> [options..]  Establish tunnel using the WebSocket transport
+      exposr tunnel create [tunnel-id] [options..]                  Create a new tunnel
+      exposr tunnel connect [tunnel-id] [target-url] [options..]    Establish tunnel using the WebSocket transport
       exposr tunnel configure <tunnel-id>                           Configure an existing tunnel
       exposr tunnel info <tunnel-id>                                Fetch tunnel information
       exposr tunnel disconnect <tunnel-id>                          Disconnect a tunnel
@@ -70,7 +70,7 @@ The `tunnel connect` can be used to create a connection to a tunnel using the we
 Connect a previously created tunnel to the target `https://example.net`.
 
     > exposr -s https://exposr.example.com -a K3JE-3XNF-8RPM-N325 tunnel connect my-tunnel https://example.net
-    ✔ 2022-02-24 19:00:00 +0000 - Setting upstream-url to 'https://example.net/'...done
+    ✔ 2022-02-24 19:00:00 +0000 - Setting target-url to 'https://example.net/'...done
     ✔ 2022-02-24 19:00:00 +0000 - Setting ingress-http to 'true'...done
     ✔ 2022-02-24 19:00:00 +0000 - Setting transport-ws to 'true'...done
     ✔ 2022-02-24 19:00:00 +0000 - Establishing tunnel...connected to https://example.net/
@@ -84,7 +84,7 @@ The connect command can also be used to "quick connect" to a target, neither an 
     > exposr -s https://exposr.example.com tunnel connect https://example.net
     ✔ 2022-02-24 19:00:00 +0000 - No account ID provided, creating account...success (VC3X-EXHJ-CW4M-TR4Y)
     ✔ 2022-02-24 19:00:00 +0000 - Creating tunnel...success (helpless-bat-97)
-    ✔ 2022-02-24 19:00:00 +0000 - Setting upstream-url to 'https://example.net/'...done
+    ✔ 2022-02-24 19:00:00 +0000 - Setting target-url to 'https://example.net/'...done
     ✔ 2022-02-24 19:00:00 +0000 - Setting ingress-http to 'true'...done
     ✔ 2022-02-24 19:00:00 +0000 - Setting transport-ws to 'true'...done
     ✔ 2022-02-24 19:00:00 +0000 - Establishing tunnel...connected to https://example.net/
