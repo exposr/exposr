@@ -5,14 +5,14 @@ import Console from '../console/index.js';
 
 class HttpTransformer extends stream.Transform {
 
-    constructor(upstreamUrl, downstreamUrl, rewriteHeaders = [], replaceHeaders = {}) {
+    constructor(targetUrl, ingressUrl, rewriteHeaders = [], replaceHeaders = {}) {
         super();
         this.replaceHeaders = replaceHeaders;
         this.rewriteHeaders = rewriteHeaders;
-        this.upstreamUrl = upstreamUrl;
-        this.upstreamHost = this.upstreamUrl.host;
+        this.targetUrl = targetUrl;
+        this.targetHost = this.targetUrl.host;
         try {
-            this.downstreamUrl = new URL(downstreamUrl);
+            this.ingressUrl = new URL(ingressUrl);
         } catch {}
         this.logger = new Console().logger;
         this.enabled = true;
@@ -31,16 +31,16 @@ class HttpTransformer extends stream.Transform {
                     if (value.toLowerCase().startsWith('http')) {
                         try {
                             const url = new URL(value);
-                            if (url.hostname == this.downstreamUrl.hostname) {
-                                url.protocol = this.upstreamUrl.protocol;
-                                url.hostname = this.upstreamUrl.hostname;
-                                url.port = this.upstreamUrl.port;
+                            if (url.hostname == this.ingressUrl.hostname) {
+                                url.protocol = this.targetUrl.protocol;
+                                url.hostname = this.targetUrl.hostname;
+                                url.port = this.targetUrl.port;
                                 value = url.href;
                             }
                         } catch (e) {
                         }
                     } else {
-                        value = this.upstreamHost;
+                        value = this.targetHost;
                     }
                 } else if (this.replaceHeaders[name] !== undefined) {
                     value = this.replaceHeaders[name].length > 0 ? this.replaceHeaders[name] : undefined;
@@ -70,7 +70,7 @@ class HttpTransformer extends stream.Transform {
             }
         };
 
-        this.logger.trace(`upstreamUrl=${upstreamUrl}, downstreamUrl=${downstreamUrl}`);
+        this.logger.trace(`targetUrl=${targetUrl}, ingressUrl=${ingressUrl}`);
     }
 
     _transform(chunk, encoding, callback) {

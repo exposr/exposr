@@ -43,7 +43,7 @@ const unsetTunnelHandler = async (opts, args) => {
 
     const parse_fn = (argv) => {
         return yargs(argv)
-            .command('upstream-url', 'Reset the upstream-url', (yargs) => { })
+            .command('target-url', 'Reset the target-url', (yargs) => { })
             .command('ingress-http-altnames', 'Reset HTTP alternative host names for the HTTP ingress',  (yargs) => { })
             .demandCommand()
             .version(false)
@@ -88,15 +88,15 @@ export const configureTunnelHandler = async (opts, args) => {
 
     const parse_fn = (argv) => {
         return yargs(argv)
-            .command('upstream-url <url>', 'Configure the upstream URL for the tunnel', (yargs) => {
+            .command('target-url <url>', 'Configure the target URL for the tunnel', (yargs) => {
                 yargs
                     .positional('url', {
                         required: true,
                         type: 'string',
                         coerce: (url) => { return validate_url(url)?.href; },
-                        description: 'URL of the upstream',
+                        description: 'URL of the target',
                     })
-                    .example('exposr tunnel configure my-tunnel set upstream-url http://example.com');
+                    .example('exposr tunnel configure my-tunnel set target-url http://example.com');
             }, (argv) => {
                 argv['value'] = argv['url'];
             })
@@ -208,7 +208,7 @@ export const configureTunnelHandler = async (opts, args) => {
 export const configureTunnel = async (args, config) => {
 
     const configOptions = {
-        'upstream-url': {upstream: { url: config['upstream-url']}},
+        'target-url': {target: { url: config['target-url']}},
         'transport-ws': {transport: { ws: { enabled: config['transport-ws']}}},
         'transport-ssh': {transport: { ssh: { enabled: config['transport-ssh']}}},
         'ingress-http': {ingress: { http: { enabled: config['ingress-http']}}},

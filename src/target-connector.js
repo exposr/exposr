@@ -3,15 +3,15 @@ import tls from 'tls';
 import portNumbers from 'port-numbers';
 import dnscache from 'dnscache';
 
-class UpstreamConnector {
-    constructor(upstream, opts = {}) {
+class TargetConnector {
+    constructor(target, opts = {}) {
         this.dnscache = new dnscache({
             enable: true,
             ttl: 60,
             cachesize: 10,
         })
         this.opts = opts;
-        const url = this.url = new URL(upstream);
+        const url = this.url = new URL(target);
         this.protocol = url.protocol.slice(0, -1);
         const protocolInfo = portNumbers.getPort(this.protocol);
         this.tls = this.protocol === 'tcps' || this.protocol === 'tls' || this.protocol === 'https' || this.protocol === 'wss';
@@ -89,4 +89,4 @@ class UpstreamConnector {
     }
 }
 
-export default UpstreamConnector;
+export default TargetConnector;

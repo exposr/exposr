@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events';
 import WebSocket from 'ws';
-import UpstreamConnector from './upstream-connector.js';
+import TargetConnector from './target-connector.js';
 import WebSocketTransport from './transport/ws/ws-transport.js';
 import { ClientError } from './utils/errors.js';
 import Console from './console/index.js';
@@ -10,7 +10,7 @@ export class Tunnel extends EventEmitter {
         super();
         this.opts = opts;
 
-        this.upstreamConnector = new UpstreamConnector(opts.upstreamUrl, {
+        this.targetConnector = new TargetConnector(opts.targetUrl, {
             allowInsecure: opts.allowInsecure,
         });
         this.established = false;
@@ -90,33 +90,33 @@ export class Tunnel extends EventEmitter {
             });
             transport.listen((sock) => {
                 this.logger.trace(`listen new sock paused=${sock.isPaused()}`);
-                const upstream = this.upstream = this.upstreamConnector.connect((err, upstreamSock) => {
+                const target = this.target = this.targetConnector.connect((err, targetSock) => {
                     if (err) {
                         sock.destroy();
-                        upstream && upstream.destroy();
+                        target && target.destroy();
                         this.emit('error', err);
                         return;
                     }
 
                     const transformerStream = this.opts.transformerStream();
-                    let pipe = upstreamSock.pipe(sock);
+                    let pipe = targetSock.pipe(sock);
                     if (transformerStream) {
                         pipe = pipe.pipe(transformerStream);
                     }
-                    pipe.pipe(upstreamSock);
+                    pipe.pipe(targetSock);
 
-                    this.logger.trace(`upstream connected paused=${sock.isPaused()}`);
+                    this.logger.trace(`target connected paused=${sock.isPaused()}`);
                     sock.accept();
                 });
 
-                upstream.once('close', () => {
+                target.once('close', () => {
                     sock.unpipe();
                     sock.destroy();
                 });
 
                 sock.once('close', () => {
-                    upstream.unpipe();
-                    upstream.destroy();
+                    target.unpipe();
+                    target.destroy();
                 });
             });
 

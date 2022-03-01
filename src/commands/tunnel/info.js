@@ -64,7 +64,7 @@ export const tunnelInfo = async (opts) => {
     });
 
     console.log('Configuration');
-    console.log(`  upstream-url: ${tunnel.upstream?.url ? tunnel.upstream?.url : '<not set>'}`);
+    console.log(`  target-url: ${tunnel.target?.url ? tunnel.target?.url : '<not set>'}`);
     console.log(`  ingress-http: ${tunnel.ingress?.http?.enabled ? tunnel.ingress?.http?.enabled : '<not set>'}`);
     console.log(`  ingress-http-altnames: ${tunnel.ingress?.http?.alt_names ? tunnel.ingress?.http?.alt_names.join(',') : '<not set>'}`);
     console.log(`  transport-ws: ${tunnel.transport?.ws?.enabled ? tunnel.transport?.ws?.enabled : '<not set>'}`);

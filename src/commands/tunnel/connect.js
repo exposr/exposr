@@ -6,7 +6,7 @@ import {
     ClientError,
     ERROR_NO_ACCOUNT,
     ERROR_NO_TUNNEL_ENDPOINT,
-    ERROR_NO_TUNNEL_UPSTREAM,
+    ERROR_NO_TUNNEL_TARGET,
     SERVER_ERROR_AUTH_NO_ACCESS_TOKEN,
     SERVER_ERROR_AUTH_PERMISSION_DENIED,
     SERVER_ERROR_TUNNEL_NOT_FOUND
@@ -17,7 +17,7 @@ import { configureTunnelHandler } from './configure.js';
 import { createTunnel } from './create.js';
 import { deleteTunnel } from './delete.js';
 
-export const command = 'connect [tunnel-id] [upstream-url] [options..]';
+export const command = 'connect [tunnel-id] [target-url] [options..]';
 export const desc = 'Establish tunnel using the WebSocket transport';
 export const builder = function (yargs) {
     return yargs
@@ -25,7 +25,7 @@ export const builder = function (yargs) {
             default: null,
             describe: 'Tunnel to create, if no tunnel name is given a random identifier is allocated'
         })
-        .positional('upstream-url', {
+        .positional('target-url', {
             describe: 'Target URL to connect to, if not given will use already configured target'
         })
         .positional('options', {
@@ -34,7 +34,7 @@ export const builder = function (yargs) {
         .option('insecure', {
             alias: 'k',
             type: 'boolean',
-            description: 'Skip upstream TLS certificate verification',
+            description: 'Skip target TLS certificate verification',
             default: false,
         })
         .option('http-mode', {
@@ -45,7 +45,7 @@ export const builder = function (yargs) {
         .option('http-header-replace', {
             alias: 'H',
             type: 'string',
-            description: 'Set HTTP header in upstream request'
+            description: 'Set HTTP header in target request'
         })
         .coerce('http-header-replace', (opt) => {
             const httpHeaders = {};
@@ -61,7 +61,7 @@ export const builder = function (yargs) {
         .option('http-header-rewrite', {
             alias: 'R',
             type: 'string',
-            description: 'Headers to rewrite URLs in for upstream requests',
+            description: 'Headers to rewrite URLs in for target requests',
             default: ['host', 'referer', 'origin'],
         })
         .coerce('http-header-rewrite', (opt) => {
@@ -78,29 +78,29 @@ export const handler = async function (argv) {
     // The following hacks are to rearrange the arguments
     // because we're doing things not properly supported by yargs
     if (argv.options.length % 2) {
-        argv.options.unshift(argv.upstreamUrl);
-        delete argv['upstream-url'];
-        delete argv['upstreamUrl'];
+        argv.options.unshift(argv.targetUrl);
+        delete argv['target-url'];
+        delete argv['targetUrl'];
     }
 
-    if (argv['tunnel-id'] && !argv['upstream-url']) {
+    if (argv['tunnel-id'] && !argv['target-url']) {
         try {
             new URL(argv['tunnel-id']);
-            argv['upstream-url'] = argv['upstreamUrl'] = argv['tunnel-id'];
+            argv['target-url'] = argv['targetUrl'] = argv['tunnel-id'];
             argv['tunnel-id'] = argv['tunnelId'] = undefined;
         } catch (e) {
         }
     }
 
     // Handle the case when only a tunnel id is given
-    if (argv['upstream-url']) {
+    if (argv['target-url']) {
         try {
-            new URL(argv['upstream-url']);
+            new URL(argv['target-url']);
         } catch (e) {
             // Failed to parse as an URL, assume it's a tunnel id
-            argv['tunnel-id'] = argv['upstream-url'];
-            argv.tunnelId = argv['upstream-url'];
-            argv['upstream-url'] = argv.upstreamUrl = undefined;
+            argv['tunnel-id'] = argv['target-url'];
+            argv.tunnelId = argv['target-url'];
+            argv['target-url'] = argv.targetUrl = undefined;
         }
     }
 
@@ -108,12 +108,12 @@ export const handler = async function (argv) {
         ...argv.options,
     ];
 
-    if (argv['upstream-url']) {
-        configArgs.push('upstream-url');
-        configArgs.push(argv['upstream-url']);
+    if (argv['target-url']) {
+        configArgs.push('target-url');
+        configArgs.push(argv['target-url']);
     }
 
-    if (!configArgs.includes('ingress-http') && argv['upstream-url']?.startsWith('http')) {
+    if (!configArgs.includes('ingress-http') && argv['target-url']?.startsWith('http')) {
         configArgs.push('ingress-http');
         configArgs.push('on');
     }
@@ -199,9 +199,9 @@ export const connectTunnel = async (args) => {
     const rewriteHeaders = args['http-header-rewrite'] || [];
     const replaceHeaders = args['http-header-replace'] || {};
     const transformEnabled = args['http-mode'] && (rewriteHeaders.length > 0 || Object.keys(replaceHeaders).length > 0);
-    const transformerStream = (upstream, downstream) => {
-        if (transformEnabled && upstream && downstream) {
-            return new HttpTransformer(upstream, downstream, rewriteHeaders, replaceHeaders)
+    const transformerStream = (target, ingress) => {
+        if (transformEnabled && target && ingress) {
+            return new HttpTransformer(target, ingress, rewriteHeaders, replaceHeaders)
         }
     }
 
@@ -238,7 +238,7 @@ const maintainTunnel = async (args) => {
         const {success, fail} = cons.logger.log('Establishing tunnel...');
         const [error, res] = await establishTunnel(args)
             .then(({tunnel, config}) => {
-                success(`connected to ${config.upstream.url}`);
+                success(`connected to ${config.target.url}`);
                 Object.keys(config.ingress).forEach((ingress) => {
                     const url = config.ingress[ingress]?.url;
                     const urls = config.ingress[ingress]?.urls;
@@ -285,7 +285,7 @@ const maintainTunnel = async (args) => {
 
         const {tunnel, config} = res;
 
-        cons.status.success(`Tunnel ${config.id} connected to ${config.upstream.url}`);
+        cons.status.success(`Tunnel ${config.id} connected to ${config.target.url}`);
         const cancelSignal = new AbortController();
         const cancelDisconnect = new AbortController();
         const disconnectWait = new Promise((resolve) => {
@@ -328,8 +328,8 @@ const establishTunnel = async (args) => {
         throw new ClientError(ERROR_NO_TUNNEL_ENDPOINT);
     }
 
-    if (config.upstream?.url == undefined) {
-        throw new ClientError(ERROR_NO_TUNNEL_UPSTREAM);
+    if (config.target?.url == undefined) {
+        throw new ClientError(ERROR_NO_TUNNEL_TARGET);
     }
 
     if (config?.connection?.connected == true) {
@@ -337,10 +337,10 @@ const establishTunnel = async (args) => {
     }
 
     const opts = {
-        upstreamUrl: config.upstream.url,
+        targetUrl: config.target.url,
         websocketUrl: config.transport.ws.url,
         transformerStream: () => {
-            return args.transformerStream(config.upstream?.url, config.ingress?.http?.url)
+            return args.transformerStream(config.target?.url, config.ingress?.http?.url)
         },
         allowInsecure: args.allowInsecure,
     };
