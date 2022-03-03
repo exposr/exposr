@@ -18,5 +18,4 @@ jobs:
 
       - name: Build package
         run:  |
-          make package.build.container
-          make image.build
+            make package.build.container

@@ -3,7 +3,7 @@ node_image?=16.14.0-alpine3.15
 platforms?=linux/amd64,linux/arm64,linux/arm/v7
 
 project:=exposr
-version:=$(shell git describe --tags --always --dirty 2> /dev/null || git rev-parse --short HEAD)
+version=$(shell . ./build.env 2> /dev/null && echo $${EXPOSR_BUILD_VERSION} || git describe --tags --always --dirty 2> /dev/null || git rev-parse --short HEAD)
 package_name=$(project)-$(version).tgz
 
 all: package.build.container image.build
@@ -20,15 +20,30 @@ endef
 %.container: builder.build
 	$(call docker.run, "make $(subst .container,,$@)")
 
-release:
-	yarn run release --skip.changelog
+build: bundle.build
 
 release.publish:
 	git push --follow-tags origin
 
 package.build:
 	yarn install --no-default-rc --frozen-lockfile
-	yarn pack --no-default-rc --production --frozen-lockfile --filename $(package_name)
+	mkdir -p dist
+	yarn pack --no-default-rc --frozen-lockfile --filename dist/$(package_name)
+
+bundle.build:
+	yarn install --no-default-rc --frozen-lockfile
+	yarn run bundle
+
+dist.clean:
+	rm -fr dist
+
+dist.linux.build:
+	yarn install --no-default-rc --frozen-lockfile
+	PKG_CACHE_PATH=.pkg-cache yarn run dist-linux
+
+dist.macos.build:
+	yarn install --no-default-rc --frozen-lockfile
+	PKG_CACHE_PATH=.pkg-cache yarn run dist-macos
 
 # Builder image
 builder.build:
@@ -38,7 +53,6 @@ builder.build:
 image.build:
 	docker build \
 		--build-arg NODE_IMAGE=$(node_image) \
-		--build-arg PACKAGE_NAME=$(package_name) \
 		--pull -t $(project):$(version) .
 
 ifneq (, $(publish))
@@ -51,7 +65,6 @@ image.buildx:
 		--platform $(platforms) \
 		$(push_flag) \
 		--build-arg NODE_IMAGE=$(node_image) \
-		--build-arg PACKAGE_NAME=$(package_name) \
 		-t $(registry)/$(project):$(version) .
 	docker buildx rm exposr-builder
 

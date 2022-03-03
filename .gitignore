@@ -1,4 +1,7 @@
 node_modules
 *.tgz
-build.env
 src/console/components/*.js
+exposr.cjs
+build.env
+dist
+.pkg-cache
