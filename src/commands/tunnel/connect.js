@@ -241,7 +241,7 @@ const maintainTunnel = async (args) => {
                 success(`connected to ${config.target.url}`);
                 Object.keys(config.ingress).forEach((ingress) => {
                     const url = config.ingress[ingress]?.url;
-                    const urls = config.ingress[ingress]?.urls;
+                    let urls = config.ingress[ingress]?.urls;
                     if (urls == undefined) {
                         urls = [url];
                     }

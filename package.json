@@ -2,16 +2,19 @@
   "name": "exposr",
   "version": "0.6.0",
   "type": "module",
-  "main": "exposr",
+  "main": "exposr.cjs",
+  "bin": "exposr.cjs",
   "author": "Fredrik Lindberg <fli@shapeshifter.se>",
   "license": "MIT",
   "files": [
-    "exposr",
-    "src/**.js",
-    "README.md",
+    "README",
     "LICENSE",
+    "Makefile",
+    "Dockerfile",
+    "package.json",
     "yarn.lock",
-    "build.env"
+    "build.env",
+    "exposr.cjs"
   ],
   "dependencies": {
     "async-sema": "^3.1.1",
@@ -34,13 +37,19 @@
     "@babel/core": "^7.16.5",
     "@babel/preset-env": "^7.16.5",
     "@babel/preset-react": "^7.16.5",
+    "esbuild": "^0.14.23",
+    "pkg": "^5.5.2",
     "standard-version": "^9.3.2"
   },
   "scripts": {
-    "prepack": "scripts/build-env.sh > build.env && yarn build",
-    "postpack": "rm build.env src/console/components/*.js",
+    "prepack": "yarn build && yarn run version && yarn bundle",
+    "postpack": "rm src/console/components/*.js exposr.cjs",
     "release": "standard-version",
     "build": "babel src/console/components -d src/console/components",
-    "dev": "babel src/console/components -d src/console/components && ./exposr"
+    "version": "scripts/build-version.sh",
+    "dev": "babel src/console/components -d src/console/components && ./exposr.sh",
+    "bundle": "esbuild --bundle --platform=node --target=node16.14 --minify --analyze --outfile=exposr.cjs exposr.js",
+    "dist-linux": "source build.env; pkg -d -o dist/exposr-${EXPOSR_BUILD_VERSION}-linux -t node16-linuxstatic-arm64,node16-linuxstatic-armv7,node16-linuxstatic-x64 exposr.cjs",
+    "dist-macos": "source build.env; pkg -d -o dist/exposr-${EXPOSR_BUILD_VERSION}-macos-x64 -t node16-macos-x64 exposr.cjs"
   }
 }

@@ -1,5 +1,13 @@
 import child_process from 'child_process';
-import fs from 'fs';
+import {
+    BUILD_DATE,
+    BUILD_GIT_BRANCH,
+    BUILD_GIT_COMMIT,
+    BUILD_MACHINE,
+    BUILD_USER,
+    BUILD_VERSION,
+} from '../build.js';
+import * as package_json from '../package.json' assert { type: "json" };
 
 class Version {
 
@@ -11,14 +19,14 @@ class Version {
 
         const gitVersion = Version.gitVersion();
         const packageVersion = Version.packageVersion();
-        const buildVersion = process.env['EXPOSR_CLI_BUILD_VERSION'];
+        const buildVersion = BUILD_VERSION;
 
         const build = {
-            branch: process.env['EXPOSR_CLI_BUILD_GIT_BRANCH'],
-            commit: process.env['EXPOSR_CLI_BUILD_GIT_COMMIT'],
-            date: process.env['EXPOSR_CLI_BUILD_DATE'],
-            user: process.env['EXPOSR_CLI_BUILD_USER'],
-            machine: process.env['EXPOSR_CLI_BUILD_MACHINE'],
+            branch: BUILD_GIT_BRANCH,
+            commit: BUILD_GIT_COMMIT,
+            date: BUILD_DATE, 
+            user: BUILD_USER, 
+            machine: BUILD_MACHINE, 
         };
 
         const version = {
@@ -41,9 +49,7 @@ class Version {
     }
 
     static packageVersion() {
-        const data = fs.readFileSync(new URL('../package.json', import.meta.url));
-        const pkg = JSON.parse(data);
-        return pkg.version;
+        return package_json?.version;
     }
 
 }
