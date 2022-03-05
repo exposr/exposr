@@ -6,6 +6,9 @@
   "bin": "exposr.cjs",
   "author": "Fredrik Lindberg <fli@shapeshifter.se>",
   "license": "MIT",
+  "engines": {
+    "node": ">=16.0.0"
+  },
   "files": [
     "README",
     "LICENSE",
