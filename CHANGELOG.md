@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.7.0](https://github.com/exposr/exposr-cli/compare/v0.6.0...v0.7.0) (2022-03-05)
+
+
+### Bug Fixes
+
+* **build:** check for existance of build.env file before sourcing ([5c92b94](https://github.com/exposr/exposr-cli/commit/5c92b94f2ee2c2aff05d4d55f9d53853fa2b7f54))
+* **build:** ignore build.js ([83b5cef](https://github.com/exposr/exposr-cli/commit/83b5cef27de387a18fb49d376c7ea23eeb7b523e))
+* don't re-assign to constant ([dd5e142](https://github.com/exposr/exposr-cli/commit/dd5e1424bb36c5efb4227813d6fcb594e7c6a700))
+
 ## [0.6.0](https://github.com/exposr/exposr-cli/compare/v0.5.0...v0.6.0) (2022-03-01)
 
 
