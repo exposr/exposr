@@ -3,5 +3,6 @@ node_modules
 src/console/components/*.js
 exposr.cjs
 build.env
+build.js
 dist
 .pkg-cache
