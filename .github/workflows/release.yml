@@ -125,6 +125,10 @@ jobs:
         with:
           name: macos-dist
 
+      - name: Generate SHA256 sums for artifacts
+        run: |
+          ls exposr-* | xargs -L 1 -I {} sh -c "sha256sum  {} > {}.sha256"
+
       - name: Build artifacts
         run: |
           ls
