@@ -70,10 +70,19 @@ export const builder = function (yargs) {
             }
             return opt instanceof Array ? opt : [opt];
         })
+        .check((argv) => {
+            if (argv['tunnel-id'] == undefined && argv['target-url'] == undefined) {
+                throw Error("Need at least one of tunnel-id or target-url");
+            }
+        });
 
 }
 export const handler = async function (argv) {
     const cons = argv.cons;
+
+    if (argv['tunnel-id'] == undefined && argv['target-url'] == undefined) {
+        throw Error("Need at least one of tunnel-id or target-url");
+    }
 
     // The following hacks are to rearrange the arguments
     // because we're doing things not properly supported by yargs
