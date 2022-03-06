@@ -23,10 +23,15 @@ class App extends React.Component {
             ...this.state,
             ...data,
 		};
+		this.render = this._render_app;
 		this.setState(next);
 	}
 
 	render() {
+		return (<></>);
+	}
+
+	_render_app() {
 		return (
 			<Box flexGrow={1} flexDirection='column'>
 				<Box>
