@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.7.1](https://github.com/exposr/exposr-cli/compare/v0.7.0...v0.7.1) (2022-03-08)
+
+
+### Bug Fixes
+
+* don't render app until there is data to display ([4f1e7b6](https://github.com/exposr/exposr-cli/commit/4f1e7b6b421e626cf594bd9316101936684d7fb9))
+* reading version from package.json ([0d4ce11](https://github.com/exposr/exposr-cli/commit/0d4ce1191637a0b2735bca82c09d5d342428187a))
+* require one of tunnel-id or target-url for connect command ([3ee9fee](https://github.com/exposr/exposr-cli/commit/3ee9feef2a4af89697148297534c4d5b273c352e))
+
 ## [0.7.0](https://github.com/exposr/exposr-cli/compare/v0.6.0...v0.7.0) (2022-03-05)
 
 
