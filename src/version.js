@@ -7,7 +7,7 @@ import {
     BUILD_USER,
     BUILD_VERSION,
 } from '../build.js';
-import * as package_json from '../package.json' assert { type: "json" };
+import package_json from '../package.json' assert { type: "json" };
 
 class Version {
 
