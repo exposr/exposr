@@ -48,10 +48,10 @@ class AdminService {
             }
         } catch (error) {
             if (error.response == undefined) {
-                return error;
+                throw error;
             }
             const err = error.response?.data?.error;
-            return new ClientError(err ?? ERROR_UNKNOWN);
+            throw new ClientError(err ?? ERROR_UNKNOWN);
         }
     }
 
