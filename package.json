@@ -25,7 +25,7 @@
     "cli-spinners": "^2.8.0",
     "deepmerge": "^4.3.1",
     "dnscache": "^1.0.2",
-    "http-parser-js": "^0.5.2",
+    "http-parser-js": "^0.5.8",
     "human-readable-ids": "^1.0.4",
     "ink": "^3.2.0",
     "log4js": "^6.9.1",
