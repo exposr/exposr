@@ -2,7 +2,7 @@ import assert from 'assert/strict';
 import { ECONNREFUSED, EINPROGRESS, EMFILE, EPIPE, ETIMEDOUT } from 'constants';
 import { EventEmitter } from 'events';
 import { Duplex } from 'stream';
-import WebSocket from 'ws';
+import WebSocket, { createWebSocketStream } from 'ws';
 import Console from '../../console/index.js';
 import CustomError from '../../utils/errors.js';
 
@@ -34,7 +34,7 @@ class WebSocketTransport extends EventEmitter {
         this._socket = opts.socket;
         assert(this._socket !== undefined);
         this._tunnelId = opts.tunnelId;
-        this._socketStream = WebSocket.createWebSocketStream(this._socket, {
+        this._socketStream = createWebSocketStream(this._socket, {
             objectMode: false,
             readableObjectMode: false,
             writableObjectMode: false,
