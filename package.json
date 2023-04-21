@@ -51,8 +51,7 @@
     "build": "babel src/console/components -d src/console/components",
     "version": "scripts/build-version.sh",
     "dev": "babel src/console/components -d src/console/components && ./exposr.sh",
-    "bundle": "esbuild --bundle --platform=node --target=node16.14 --minify --analyze --outfile=exposr.cjs exposr.js",
-    "dist-linux": "source build.env; pkg -d -o dist/exposr-${EXPOSR_BUILD_VERSION}-linux -t node16-linuxstatic-arm64,node16-linuxstatic-armv7,node16-linuxstatic-x64 exposr.cjs",
-    "dist-macos": "source build.env; pkg -d -o dist/exposr-${EXPOSR_BUILD_VERSION}-macos-x64 -t node16-macos-x64 exposr.cjs"
+    "bundle": "esbuild --bundle --platform=node --minify --analyze --outfile=exposr.cjs exposr.js",
+    "dist": "scripts/build-dist.sh"
   }
 }
