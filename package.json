@@ -42,7 +42,11 @@
     "@babel/preset-react": "^7.18.6",
     "esbuild": "^0.14.23",
     "pkg": "^5.5.2",
+    "pkg-fetch": "^3.5.2",
     "standard-version": "^9.3.2"
+  },
+  "resolutions": {
+    "pkg-fetch": "3.5.2"
   },
   "scripts": {
     "prepack": "yarn build && yarn run version && yarn bundle",

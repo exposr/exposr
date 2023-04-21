@@ -2975,10 +2975,10 @@ pify@^4.0.1:
   resolved "https://registry.yarnpkg.com/pify/-/pify-4.0.1.tgz#4b2cd25c50d598735c50292224fd8c6df41e3231"
   integrity sha512-uB80kBFb/tfd68bVleG9T5GGsGPjJrLAUpR5PZIrhBnIaRTQRjqdJSsIKkOP6OAIFbj7GOrcudc5pNjZ+geV2g==
 
-pkg-fetch@3.4.2:
-  version "3.4.2"
-  resolved "https://registry.yarnpkg.com/pkg-fetch/-/pkg-fetch-3.4.2.tgz#6f68ebc54842b73f8c0808959a9df3739dcb28b7"
-  integrity sha512-0+uijmzYcnhC0hStDjm/cl2VYdrmVVBpe7Q8k9YBojxmR5tG8mvR9/nooQq3QSXiQqORDVOTY3XqMEqJVIzkHA==
+pkg-fetch@3.4.2, pkg-fetch@3.5.2, pkg-fetch@^3.5.2:
+  version "3.5.2"
+  resolved "https://registry.yarnpkg.com/pkg-fetch/-/pkg-fetch-3.5.2.tgz#33e0d4f3b0c371fa9c133a10a081d5955d104376"
+  integrity sha512-KlRF3cDS4J5PRTKh5dkF5s+CYKa+4eUXzymWqTKPU/p3WmYlWZu7AS0dH8moPxg+QcJNB4/wu1wVO2a0Asv2Dw==
   dependencies:
     chalk "^4.1.2"
     fs-extra "^9.1.0"
