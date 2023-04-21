@@ -1,12 +1,16 @@
 registry?=exposr
-node_image?=16.14.0-alpine3.15
+node_version=18.5.0
+node_image?=$(node_version)-alpine3.16
 platforms?=linux/amd64,linux/arm64,linux/arm/v7
+# Available build targets https://github.com/vercel/pkg-fetch
+pkg_linux_dist?=node$(node_version)-linuxstatic-arm64,node$(node_version)-linuxstatic-armv7,node$(node_version)-linuxstatic-x64
+pkg_macos_dist?=node$(node_version)-macos-x64
 
 project:=exposr
 version=$(shell [ -e build.env ] && . ./build.env 2> /dev/null && echo $${EXPOSR_BUILD_VERSION} || git describe --tags --always --dirty 2> /dev/null || git rev-parse --short HEAD)
 package_name=$(project)-$(version).tgz
 
-all: package.build.container image.build
+all: package.build.container bundle.build.container dist.linux.build.container image.build
 
 define docker.run
 	docker run --rm -i \
@@ -32,18 +36,20 @@ package.build:
 
 bundle.build:
 	yarn install --no-default-rc --frozen-lockfile
+	yarn run build
 	yarn run bundle
+	rm src/console/components/*.js
 
 dist.clean:
 	rm -fr dist
 
 dist.linux.build:
 	yarn install --no-default-rc --frozen-lockfile
-	PKG_CACHE_PATH=.pkg-cache yarn run dist-linux
+	PKG_CACHE_PATH=.pkg-cache yarn run dist linux $(pkg_linux_dist)
 
 dist.macos.build:
 	yarn install --no-default-rc --frozen-lockfile
-	PKG_CACHE_PATH=.pkg-cache yarn run dist-macos
+	PKG_CACHE_PATH=.pkg-cache yarn run dist macos $(pkg_macos_dist)
 
 # Builder image
 builder.build:
@@ -53,6 +59,7 @@ builder.build:
 image.build:
 	docker build \
 		--build-arg NODE_IMAGE=$(node_image) \
+		--build-arg VERSION=${version} \
 		--pull -t $(project):$(version) .
 
 ifneq (, $(publish))
@@ -65,6 +72,7 @@ image.buildx:
 		--platform $(platforms) \
 		$(push_flag) \
 		--build-arg NODE_IMAGE=$(node_image) \
+		--build-arg VERSION=${version} \
 		-t $(registry)/$(project):$(version) .
 	docker buildx rm exposr-builder
 
