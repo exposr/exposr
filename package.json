@@ -44,7 +44,7 @@
     "esbuild": "^0.17.17",
     "pkg": "^5.5.2",
     "pkg-fetch": "^3.5.2",
-    "standard-version": "^9.3.2"
+    "standard-version": "^9.5.0"
   },
   "resolutions": {
     "pkg-fetch": "3.5.2"
