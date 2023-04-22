@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.7.2](https://github.com/exposr/exposr-cli/compare/v0.7.1...v0.7.2) (2023-04-22)
+
+
+### Features
+
+* list more tunnel details ([c504f68](https://github.com/exposr/exposr-cli/commit/c504f68270b3ffb358cd28282c999cf8d924761e))
+
+
+### Bug Fixes
+
+* throw error instead of returning ([d292424](https://github.com/exposr/exposr-cli/commit/d29242499851cdf4ad1955c4c389b3fcabc135b9))
+
 ### [0.7.1](https://github.com/exposr/exposr-cli/compare/v0.7.0...v0.7.1) (2022-03-08)
 
 
