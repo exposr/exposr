@@ -15,8 +15,10 @@ For the server component, see [exposr-server](https://github.com/fredriklindberg
 
 Exposing localhost port 3000 using server at `exposr.example.com`
 
-    > docker run --rm -ti exposr/exposr:latest -s https://exposr.example.com tunnel connect http://host.docker.internal:3000
+    > docker run --rm -ti --add-host host.docker.internal:host-gateway exposr/exposr:latest -s https://exposr.example.com tunnel connect http://host.docker.internal:3000
 
+Depending on your Docker installation, `--add-host host.docker.internal:host-gateway` may be required to inject a DNS entry
+to point to the host machine.
 
 To expose/proxy a host different than localhost
 
