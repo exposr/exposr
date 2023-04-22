@@ -21,28 +21,32 @@
   ],
   "dependencies": {
     "async-sema": "^3.1.1",
-    "axios": "^0.21.1",
-    "cli-spinners": "^2.6.1",
-    "deepmerge": "^4.2.2",
+    "axios": "^1.3.5",
+    "cli-spinners": "^2.8.0",
+    "deepmerge": "^4.3.1",
     "dnscache": "^1.0.2",
-    "http-parser-js": "^0.5.2",
+    "http-parser-js": "^0.5.8",
     "human-readable-ids": "^1.0.4",
     "ink": "^3.2.0",
-    "log4js": "^6.4.0",
+    "log4js": "^6.9.1",
     "node-emoji": "^1.11.0",
     "port-numbers": "^6.0.0",
-    "react": "^17.0.2",
-    "ws": "^7.4.6",
-    "yargs": "^17.2.1"
+    "react": "^18.2.0",
+    "ws": "^8.13.0",
+    "yargs": "^17.7.1"
   },
   "devDependencies": {
-    "@babel/cli": "^7.16.0",
-    "@babel/core": "^7.16.5",
-    "@babel/preset-env": "^7.16.5",
-    "@babel/preset-react": "^7.16.5",
+    "@babel/cli": "^7.21.0",
+    "@babel/core": "^7.21.4",
+    "@babel/preset-env": "^7.21.4",
+    "@babel/preset-react": "^7.18.6",
     "esbuild": "^0.14.23",
     "pkg": "^5.5.2",
+    "pkg-fetch": "^3.5.2",
     "standard-version": "^9.3.2"
+  },
+  "resolutions": {
+    "pkg-fetch": "3.5.2"
   },
   "scripts": {
     "prepack": "yarn build && yarn run version && yarn bundle",
@@ -51,8 +55,7 @@
     "build": "babel src/console/components -d src/console/components",
     "version": "scripts/build-version.sh",
     "dev": "babel src/console/components -d src/console/components && ./exposr.sh",
-    "bundle": "esbuild --bundle --platform=node --target=node16.14 --minify --analyze --outfile=exposr.cjs exposr.js",
-    "dist-linux": "source build.env; pkg -d -o dist/exposr-${EXPOSR_BUILD_VERSION}-linux -t node16-linuxstatic-arm64,node16-linuxstatic-armv7,node16-linuxstatic-x64 exposr.cjs",
-    "dist-macos": "source build.env; pkg -d -o dist/exposr-${EXPOSR_BUILD_VERSION}-macos-x64 -t node16-macos-x64 exposr.cjs"
+    "bundle": "esbuild --bundle --platform=node --minify --analyze --outfile=exposr.cjs exposr.js",
+    "dist": "scripts/build-dist.sh"
   }
 }

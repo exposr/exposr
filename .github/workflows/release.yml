@@ -12,7 +12,7 @@ jobs:
 
     steps:
       - name: Set up git
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Setup builder
         run: make builder.build
@@ -34,7 +34,7 @@ jobs:
 
     steps:
       - name: Get package
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: package
 
@@ -59,16 +59,16 @@ jobs:
 
     steps:
       - name: Get package
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: package
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
+        uses: docker/setup-qemu-action@v2
 
       - name: Set up Docker Buildx
         id: buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
 
       - name: Available platforms
         run: echo ${{ steps.buildx.outputs.platforms }}
@@ -111,17 +111,17 @@ jobs:
 
     steps:
       - name: Package artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: package
 
       - name: Linux build artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: linux-dist
 
       - name: MacOS build artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: macos-dist
 

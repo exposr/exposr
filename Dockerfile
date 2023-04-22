@@ -9,10 +9,11 @@ ENTRYPOINT ["/bin/sh", "-c"]
 
 FROM node:${NODE_IMAGE} as platform
 ARG TARGETPLATFORM
+ARG VERSION=*
 COPY dist /dist
-RUN if [ "${TARGETPLATFORM}" = "linux/amd64" ]; then cp /dist/exposr-*-linux-x64 /exposr; fi
-RUN if [ "${TARGETPLATFORM}" = "linux/arm64" ]; then cp /dist/exposr-*-linux-arm64 /exposr; fi
-RUN if [ "${TARGETPLATFORM}" = "linux/arm/v7" ]; then cp /dist/exposr-*-linux-armv7 /exposr; fi
+RUN if [ "${TARGETPLATFORM}" = "linux/amd64" ]; then cp /dist/exposr-${VERSION}-linux-x64 /exposr; fi
+RUN if [ "${TARGETPLATFORM}" = "linux/arm64" ]; then cp /dist/exposr-${VERSION}-linux-arm64 /exposr; fi
+RUN if [ "${TARGETPLATFORM}" = "linux/arm/v7" ]; then cp /dist/exposr-${VERSION}-linux-armv7 /exposr; fi
 
 FROM scratch
 COPY --from=platform /exposr /exposr
