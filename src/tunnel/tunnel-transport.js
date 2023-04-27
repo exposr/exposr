@@ -1,11 +1,11 @@
 import { EventEmitter } from 'events';
 import WebSocket from 'ws';
 import TargetConnector from './target-connector.js';
-import WebSocketTransport from './transport/ws/ws-transport.js';
-import { ClientError } from './utils/errors.js';
-import Console from './console/index.js';
+import WebSocketTransport from '../transport/ws/ws-transport.js';
+import { ClientError } from '../utils/errors.js';
+import Console from '../console/index.js';
 
-export class Tunnel extends EventEmitter {
+export class TunnelTransport extends EventEmitter {
     constructor(opts) {
         super();
         this.opts = opts;
@@ -13,17 +13,16 @@ export class Tunnel extends EventEmitter {
         this.targetConnector = new TargetConnector(opts.targetUrl, {
             allowInsecure: opts.allowInsecure,
         });
-        this.established = false;
+        this.connected = false;
 
         this.logger = new Console().log;
     }
 
-    connect(cancelSignal) {
-        const cancelController = new AbortController();
+    connect(endpoint, cancelSignal) {
         return new Promise((resolve, reject) => {
 
             const abortHandler = () => {
-                this._ws_sock && this._ws_sock.disconnect();
+                this.close();
                 handler(new Error('aborted'));
             };
 
@@ -50,28 +49,31 @@ export class Tunnel extends EventEmitter {
             this.once('close', closeHandler);
 
             cancelSignal && cancelSignal.addEventListener('abort', abortHandler, { once: true });
-            this._connect();
+            this._connect(endpoint);
         });
     }
 
-    _connect() {
-        const endpoint = this.opts.websocketUrl;
+    _connect(endpoint) {
         const ws = this._ws_sock = new WebSocket(endpoint, { handshakeTimeout: 2000 });
 
         ws.once('unexpected-response', (req, res) => {
             res.on('data', (chunk) => {
                 let err;
-                const errCode = JSON.parse(chunk);
-                if (typeof errCode?.error == 'string') {
-                    err = new ClientError(errCode.error);
-                } else {
-                    if (res.statusCode == 401 || res.statusCode == 403) {
-                        err = new ClientError(SERVER_ERROR_AUTH_PERMISSION_DENIED);
-                    } else if (res.statusCode == 503) {
-                        err = new ClientError(SERVER_ERROR_TUNNEL_ALREADY_CONNECTED);
+                try {
+                    const errCode = JSON.parse(chunk);
+                    if (typeof errCode?.error == 'string') {
+                        err = new ClientError(errCode.error);
                     } else {
-                        err = new ClientError(ERROR_UNKNOWN);
+                        if (res.statusCode == 401 || res.statusCode == 403) {
+                            err = new ClientError(SERVER_ERROR_AUTH_PERMISSION_DENIED);
+                        } else if (res.statusCode == 503) {
+                            err = new ClientError(SERVER_ERROR_TUNNEL_ALREADY_CONNECTED);
+                        } else {
+                            err = new ClientError(ERROR_UNKNOWN);
+                        }
                     }
+                } catch (e) {
+                    err = e;
                 }
                 this.logger.trace(err);
                 this.emit('error', err);
@@ -125,7 +127,7 @@ export class Tunnel extends EventEmitter {
                 transport.destroy();
             });
 
-            this.established = true;
+            this.connected = true;
             this.emit('open', endpoint);
         });
 
@@ -134,18 +136,21 @@ export class Tunnel extends EventEmitter {
         });
 
         ws.once('close', (code, reason) => {
-            const wasEstablished = this.established;
-            this.established = false;
-            this.emit('close', endpoint, wasEstablished)
+            this.connected = false;
+            reason = reason?.toString('utf-8') || "";
+            reason = `${reason != "" ? reason : "Connection closed"} (${code})`
+            this.emit('close', code, reason)
+            this.close();
         });
     }
 
-    disconnect() {
+    close() {
         if (this._ws_sock) {
             this._ws_sock.close();
+            this._ws_sock.removeAllListeners();
             delete this._ws_sock;
         }
     }
 }
 
-export default Tunnel;
+export default TunnelTransport;

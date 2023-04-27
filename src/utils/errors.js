@@ -7,6 +7,17 @@ class CustomError extends Error {
     }
 }
 
+export const isFatal = (e) => {
+    const fatalErrors = [
+        SERVER_ERROR_AUTH_NO_ACCESS_TOKEN,
+        SERVER_ERROR_TUNNEL_NOT_FOUND,
+        SERVER_ERROR_AUTH_PERMISSION_DENIED,
+        ERROR_NO_TUNNEL_ENDPOINT,
+        ERROR_NO_ACCOUNT,
+    ];
+    return fatalErrors.includes(e.code);
+};
+
 export default CustomError;
 export class ClientError extends Error {
 

@@ -27,21 +27,22 @@ export const handler = async function (argv) {
         delete argv['tunnel-id'];
     }
 
-    const {success, fail} = cons.logger.log(`Creating tunnel...`);
+    const tunnelId = argv['tunnel-id'];
+    const {success, fail} = cons.logger.log(`Creating tunnel ${tunnelId}...`);
     await createTunnel({
         cons,
         server: argv['server'],
         account: argv['account'],
-        tunnelId: argv['tunnel-id'],
+        tunnelId,
     }).then(async (tunnel) => {
-        success(`success (${tunnel.id})`);
+        success(`created`);
 
         if (argv.options.length > 0) {
             await configureTunnelHandler({
                 cons,
                 server: argv['server'],
                 account: argv['account'],
-                tunnelId: argv['tunnel-id'],
+                tunnelId,
             }, argv.options);
         }
 
@@ -49,7 +50,7 @@ export const handler = async function (argv) {
     })
     .catch((e) => {
         fail(`failed (${e.message})`);
-        cons.status.fail(`Could not create tunnel`);
+        cons.status.fail(`Could not create tunnel ${tunnelId}`);
     });
 
 }
@@ -65,7 +66,6 @@ export const createTunnel = async (opts) => {
     const tunnelService = new TunnelService(opts);
 
     return tunnelService.create(tunnelId).catch((e) => {
-        e.message = `Failed to create tunnel ${tunnelId}: ${e.message}`;
         throw e;
     });
 }

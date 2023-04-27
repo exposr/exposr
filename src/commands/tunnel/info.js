@@ -41,6 +41,8 @@ export const tunnelInfo = async (opts) => {
     console.log(`Tunnel: ${tunnel.id}`);
     if (tunnel?.connection?.connected != undefined) {
         console.log(`Connected: ${tunnel.connection.connected}`);
+        console.log(`Connections: ${tunnel.connection.connections || (tunnel.connection.connected ? 1 : 0)}`)
+        console.log(`Max connections: ${tunnel.transport.max_connections || 1}`)
         tunnel?.connection?.peer && console.log(`Peer: ${tunnel.connection.peer}`);
         tunnel?.connection?.connected_at && console.log(`Connected at: ${tunnel.connection.connected_at}`);
         tunnel?.connection?.alive_at && console.log(`Alive at: ${tunnel.connection.alive_at}`);
@@ -49,8 +51,10 @@ export const tunnelInfo = async (opts) => {
     console.log(`Created at: ${tunnel.created_at}`);
 
     console.log(`Transports`);
-    Object.keys(tunnel.transport).forEach(ep => {
-        console.log(`  ${ep.toUpperCase()}: ${tunnel.transport[ep]?.url}`);
+    ['ws', 'ssh'].forEach((ep) => {
+        if (tunnel.transport[ep]) {
+            console.log(`  ${ep.toUpperCase()}: ${tunnel.transport[ep]?.url}`);
+        }
     });
 
     console.log(`Ingress points`);
