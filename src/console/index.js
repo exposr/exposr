@@ -19,6 +19,7 @@ class Console {
     }
 
     async init(interactive) {
+        this.interactive = interactive;
 
         const stdoutOutput = (str, status) => {
             process.stdout.write(`${str}${status != undefined ? '\n' : ''}`);

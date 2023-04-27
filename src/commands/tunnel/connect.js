@@ -1,7 +1,7 @@
 import { setTimeout } from 'timers/promises';
 import TunnelService from '../../service/tunnel-service.js';
 import HttpTransformer from '../../transformer/http-transformer.js';
-import Tunnel from '../../tunnel.js';
+import TunnelTransport from '../../tunnel/tunnel-transport.js';
 import {
     ClientError,
     ERROR_NO_ACCOUNT,
@@ -16,6 +16,7 @@ import { createAccount } from '../account/create.js';
 import { configureTunnelHandler } from './configure.js';
 import { createTunnel } from './create.js';
 import { deleteTunnel } from './delete.js';
+import Tunnel from '../../tunnel/tunnel.js';
 
 export const command = 'connect [tunnel-id] [target-url] [options..]';
 export const desc = 'Establish tunnel using the WebSocket transport';
@@ -49,7 +50,7 @@ export const builder = function (yargs) {
         })
         .coerce('http-header-replace', (opt) => {
             const httpHeaders = {};
-            const httpHeaderArgs = opt || [];
+            const httpHeaderArgs = opt || [];
             (httpHeaderArgs instanceof Array ? httpHeaderArgs : [httpHeaderArgs]).forEach((v) => {
                 const kv = v.split(/:(.*)/).map((x) => x.trim())
                 if (kv.length === 3) {
@@ -69,14 +70,9 @@ export const builder = function (yargs) {
                 return [];
             }
             return opt instanceof Array ? opt : [opt];
-        })
-        .check((argv) => {
-            if (argv['tunnel-id'] == undefined && argv['target-url'] == undefined) {
-                throw Error("Need at least one of tunnel-id or target-url");
-            }
         });
-
 }
+
 export const handler = async function (argv) {
     const cons = argv.cons;
 
@@ -135,17 +131,22 @@ export const handler = async function (argv) {
     let accountId = argv['account'];
     if (!accountId) {
         const {success, fail} = cons.logger.log(`No account ID provided, creating account...`);
-        await createAccount({
+        const res = await createAccount({
             cons: argv.cons,
             server: argv.server,
         }).then((account) => {
             accountId = account?.account_id_hr;
             success(`success (${accountId})`);
             cons.status.success(`Created account ${accountId}`);
+            return true;
         }).catch((e) => {
             fail(`failed (${e.message})`);
             cons.status.fail('Failed to create account')
+            return false;
         });
+        if (!res) {
+            return;
+        }
     }
 
     let tunnelId = argv['tunnel-id'];
@@ -161,10 +162,16 @@ export const handler = async function (argv) {
             tunnelId = tunnel.id;
             success(`success (${tunnelId})`);
             cons.status.success(`Created tunnel ${tunnelId}`);
+            return tunnel;
         }).catch((e) => {
             fail(`failed (${e.message})`);
             cons.status.fail('Failed to create tunnel')
+            return undefined;
         });
+
+        if (!tunnel) {
+            return;
+        }
     }
 
     const opts = {
@@ -184,6 +191,7 @@ export const handler = async function (argv) {
 
     await connectTunnel(opts)
         .catch((e) => {
+            cons.log.error(e.message);
             cons.status.fail(`${e.message}`);
         });
 
@@ -228,108 +236,17 @@ export const connectTunnel = async (args) => {
 
 const maintainTunnel = async (args) => {
     const cons = args.cons;
-
-    const isFatal = (e) => {
-        const fatalErrors = [
-            SERVER_ERROR_AUTH_NO_ACCESS_TOKEN,
-            SERVER_ERROR_TUNNEL_NOT_FOUND,
-            SERVER_ERROR_AUTH_PERMISSION_DENIED,
-            ERROR_NO_TUNNEL_ENDPOINT,
-            ERROR_NO_ACCOUNT,
-        ];
-        return fatalErrors.includes(e.code);
-    }
-
-    let retryDelay = 1000;
-
     cons.status.spinner("Connecting...")
-    while (true) {
-        const {success, fail} = cons.logger.log('Establishing tunnel...');
-        const [error, res] = await establishTunnel(args)
-            .then(({tunnel, config}) => {
-                success(`connected to ${config.target.url}`);
-                Object.keys(config.ingress).forEach((ingress) => {
-                    const url = config.ingress[ingress]?.url;
-                    let urls = config.ingress[ingress]?.urls;
-                    if (urls == undefined) {
-                        urls = [url];
-                    }
-                    urls.forEach(url => {
-                        cons.log.info(`Ingress ${ingress.toUpperCase()}: ${url}`);
-                    });
-                });
-                return [undefined, {tunnel, config}];
-            })
-            .catch((e) => {
-                fail(`failed (${e.message})`);
-                const reconnect = !(e && isFatal(e));
-                return [{reconnect, e}]
-            });
 
-        if (error) {
-            const {reconnect, e} = error;
-            if (!reconnect) {
-                e && cons.status.fail(`Failed to establish tunnel: ${e.message}`);
-                break;
-            }
-
-            const cancelTimeout = new AbortController();
-            const cancelSignal = new AbortController();
-
-            const result = await Promise.race([
-                setTimeout(1000, 'timeout', { signal: cancelTimeout.signal }),
-                signalWait(['SIGINT', 'SIGTERM'], cancelSignal.signal),
-            ]).finally(() => {
-                cancelTimeout.abort();
-                cancelSignal.abort();
-            });
-
-            if (result == 'timeout') {
-                retryDelay = Math.max(retryDelay * 1.1, 5000);
-                continue;
-            } else {
-                break;
-            }
-        }
-
-        const {tunnel, config} = res;
-
-        cons.status.success(`Tunnel ${config.id} connected to ${config.target.url}`);
-        const cancelSignal = new AbortController();
-        const cancelDisconnect = new AbortController();
-        const disconnectWait = new Promise((resolve) => {
-            const closeHandler = () => {
-                cons.log.warn(`Lost connection to tunnel ${config.id}`);
-                cons.status.spinner("Reconnecting...")
-                resolve('reconnect');
-            };
-            tunnel.once('close', closeHandler);
-            cancelDisconnect.signal.addEventListener('abort', () => {
-                tunnel.removeListener('close', closeHandler);
-                resolve();
-            }, {
-                once: true,
-            });
-        });
-
-        const result = await Promise.race([
-           signalWait(['SIGINT', 'SIGTERM'], cancelSignal.signal, 'signal'),
-           disconnectWait,
-        ]).finally(() => {
-            cancelSignal.abort();
-            cancelDisconnect.abort();
-        });
-
-        if (result == 'signal') {
-            tunnel.disconnect();
-            break;
-        }
-        retryDelay = 1000;
-    }
-}
-
-const establishTunnel = async (args) => {
     const tunnelService = new TunnelService(args);
+
+    const getEndpoint = async () => {
+        return tunnelService.read(true).then((config) => {
+            return [config.transport?.ws?.url];
+        }).catch((e) => {
+            return [undefined, e];
+        });
+    };
 
     const config = await tunnelService.read(true)
 
@@ -341,30 +258,99 @@ const establishTunnel = async (args) => {
         throw new ClientError(ERROR_NO_TUNNEL_TARGET);
     }
 
-    if (config?.connection?.connected == true) {
-        await tunnelService.disconnect();
-    }
+    const maxConnections = config?.transport?.max_connections || 1;
 
-    const opts = {
+    const tunnel = new Tunnel({
         targetUrl: config.target.url,
         websocketUrl: config.transport.ws.url,
         transformerStream: () => {
             return args.transformerStream(config.target?.url, config.ingress?.http?.url)
         },
         allowInsecure: args.allowInsecure,
+        maxTransports: maxConnections,
+        getEndpoint,
+    });
+
+    const ctx = {
+        state: 'init',
+        banner: false,
+        has_connected: false,
+        prev_status: {}
     };
 
-    const tunnel = new Tunnel(opts);
+    const handleStatus = (status, source) => {
+        switch (ctx.state) {
+        case 'init':
+            ctx.cons = cons.logger.log(`Connecting tunnel ${config.id}...`);
+            ctx.state = 'connecting';
+            break;
+        case 're-init':
+            if (!cons.interactive && !ctx.cons && source == 0) {
+                ctx.cons = cons.logger.log(`Attempting to reconnect ${config.id}...`);
+            }
+            ctx.state = 'connecting';
+        case 'connecting':
+            if (status.connected) {
+                if (ctx.cons) {
+                    ctx.cons?.success(`connected to ${config.target.url}`);
+                } else {
+                }
+                if (!ctx.banner) {
+                    ctx.banner = true;
+                    Object.keys(config.ingress).forEach((ingress) => {
+                        const url = config.ingress[ingress]?.url;
+                        let urls = config.ingress[ingress]?.urls;
+                        if (urls == undefined) {
+                            urls = [url];
+                        }
+                        urls.forEach(url => {
+                            cons.log.info(`Ingress ${ingress.toUpperCase()}: ${url}`);
+                        });
+                    });
+                }
+                ctx.state = 'connected';
+                delete ctx.cons;
+            } else {
+                const allFailed = status.transports.every((transport) => transport.error != undefined);
+                if (allFailed) {
+                    const error = status.transports[0].error;
+                    ctx.cons?.fail(`failed: ${error.message}`);
+                    cons.status.spinner(`Reconnecting tunnel ${config.id}... (${error.message})`)
+                    ctx.state = "re-init";
+                    delete ctx.cons;
+                }
+                break;
+            }
+        case 'connected':
+            if (status.connected) {
+                cons.status.success(`Tunnel ${config.id} connected to ${config.target.url} (${status.current_connections}/${status.max_connections} connections)`);
+                if (!cons.interactive && status.current_connections != ctx.prev_status.current_connections) {
+                    const {success} = cons.logger.log(`Tunnel ${config.id} connection ${status.current_connections}/${status.max_connections} connected`);
+                    success();
+                } else if (cons.interactive && ctx.has_connected && ctx.prev_status.current_connections == 0) {
+                    const {success} = cons.logger.log(`Tunnel ${config.id} connection to ${config.target.url} re-established`);
+                    success();
+                }
+                ctx.has_connected = true;
+            } else {
+                const close = status.transports?.[0]?.closed || "Unknown reason";
+                cons.log.warn(`Lost connection to tunnel ${config.id}: ${close}`);
+                cons.status.spinner(`Reconnecting tunnel ${config.id}...`);
+                ctx.state = 're-init';
+            }
+            break;
+        }
+        ctx.prev_status = status;
+    };
+
+    tunnel.on('status', handleStatus);
 
     const cancelSignal = new AbortController();
-    const cancelConnect = new AbortController();
-    return Promise.race([
+    await Promise.race([
         signalWait(['SIGINT', 'SIGTERM'], cancelSignal.signal, 'signal'),
-        tunnel.connect(cancelConnect.signal),
-    ]).then(() => {
-        return {tunnel, config};
-    }).finally(() => {
+        tunnel.connect(cancelSignal.signal)
+     ]).finally(() => {
+        tunnel.removeListener('status', handleStatus);
         cancelSignal.abort();
-        cancelConnect.abort();
-    });
-}
+     });
+};
