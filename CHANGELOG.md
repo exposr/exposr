@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.8.0](https://github.com/exposr/exposr-cli/compare/v0.7.2...v0.8.0) (2023-04-30)
+
+
+### Features
+
+* add client multi-connect support ([bd06ae1](https://github.com/exposr/exposr-cli/commit/bd06ae11c742e33cf95e75e99a5eebc05046c4b5))
+* display connection status in info command ([2f727a0](https://github.com/exposr/exposr-cli/commit/2f727a059ed139e5399f2f1bbbca47489e0b243c))
+
 ### [0.7.2](https://github.com/exposr/exposr-cli/compare/v0.7.1...v0.7.2) (2023-04-22)
 
 
