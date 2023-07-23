@@ -28,32 +28,7 @@ jobs:
           path: dist
           retention-days: 1
 
-  dist_macos:
-    runs-on: macos-latest
-    needs: build
-
-    steps:
-      - name: Get package
-        uses: actions/download-artifact@v3
-        with:
-          name: package
-
-      - name: Extract package
-        run:  |
-            tar xvf exposr-*.tgz --strip-components=1
-
-      - name: Build distribution
-        run:  |
-            make dist.macos.build
-
-      - name: Save artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: macos-dist
-          path: dist
-          retention-days: 1
-
-  dist_linux:
+  dist_container:
     runs-on: ubuntu-latest
     needs: build
 
@@ -80,50 +55,44 @@ jobs:
       - name: Setup builder
         run: make builder.build
 
-      - name: Build distribution
-        run:  |
-            make dist.linux.build.container
-
-      - name: Save artifacts
-        uses: actions/upload-artifact@v3
+      - name: Login to ghcr.io
+        uses: docker/login-action@v2
         with:
-          name: linux-dist
-          path: dist
-          retention-days: 1
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v1
+      - name: Publish versioned container to ghcr.io
+        run:  |
+          make publish=true registry=ghcr.io/exposr image.xbuild
+
+      - name: Publish latest container to ghcr.io
+        run: |
+          make registry=ghcr.io/exposr image.xbuild.latest
+
+      - name: Login to docker.io 
+        uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_ACCESS_TOKEN }}
 
-      - name: Publish versioned container
+      - name: Publish versioned container to docker.io 
         run:  |
-          make publish=true image.buildx
+          make registry=docker.io/exposr publish=true image.xbuild
 
-      - name: Publish latest container
+      - name: Publish latest container to docker.io
         run: |
-          make image.buildx.latest
+          make registry=docker.io/exposr image.xbuild.latest
 
   release:
     runs-on: ubuntu-latest
-    needs: [dist_linux, dist_macos]
+    needs: [dist_image]
 
     steps:
       - name: Package artifact
         uses: actions/download-artifact@v3
         with:
           name: package
-
-      - name: Linux build artifacts
-        uses: actions/download-artifact@v3
-        with:
-          name: linux-dist
-
-      - name: MacOS build artifacts
-        uses: actions/download-artifact@v3
-        with:
-          name: macos-dist
 
       - name: Generate SHA256 sums for artifacts
         run: |

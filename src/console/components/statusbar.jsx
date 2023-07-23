@@ -1,6 +1,6 @@
 import React from 'react';
 import {Text, Box} from 'ink';
-import Emoji from 'node-emoji';
+import * as Emoji from 'node-emoji';
 import Spinner from './spinner.js';
 
 export const Statusbar = (props) => {

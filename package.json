@@ -2,9 +2,9 @@
   "name": "exposr",
   "version": "0.8.0",
   "type": "module",
-  "main": "exposr.cjs",
-  "bin": "exposr.cjs",
-  "author": "Fredrik Lindberg <fli@shapeshifter.se>",
+  "main": "exposr.mjs",
+  "bin": "exposr.mjs",
+  "author": "Fredrik Lindberg <fli@fli.dev>",
   "license": "MIT",
   "engines": {
     "node": ">=16.0.0"
@@ -17,8 +17,8 @@
     "package.json",
     "yarn.lock",
     "build.env",
-    "exposr.cjs",
-    "scripts/build-dist.sh"
+    "exposr.mjs",
+    "docker/entrypoint.sh"
   ],
   "dependencies": {
     "async-sema": "^3.1.1",
@@ -28,36 +28,34 @@
     "dnscache": "^1.0.2",
     "http-parser-js": "^0.5.8",
     "human-readable-ids": "^1.0.4",
-    "ink": "^3.2.0",
+    "ink": "^4.3.0",
     "log4js": "^6.9.1",
-    "node-emoji": "^1.11.0",
+    "node-emoji": "^2.1.0",
     "port-numbers": "^6.0.0",
     "react": "^18.2.0",
+    "react-devtools-core": "^4.28.0",
     "ws": "^8.13.0",
     "yargs": "^17.7.1"
   },
   "devDependencies": {
-    "@babel/cli": "^7.21.0",
-    "@babel/core": "^7.21.4",
-    "@babel/preset-env": "^7.21.4",
-    "@babel/preset-react": "^7.18.6",
-    "esbuild": "^0.17.17",
+    "@babel/cli": "^7.22.9",
+    "@babel/core": "^7.22.9",
+    "@babel/preset-env": "^7.22.9",
+    "@babel/preset-react": "^7.22.5",
+    "@rollup/plugin-commonjs": "^25.0.3",
+    "@rollup/plugin-json": "^6.0.0",
     "mocha": "^10.2.0",
-    "pkg": "^5.5.2",
-    "pkg-fetch": "^3.5.2",
+    "rollup": "^3.26.3",
     "standard-version": "^9.5.0"
-  },
-  "resolutions": {
-    "pkg-fetch": "3.5.2"
   },
   "scripts": {
     "prepack": "yarn build && yarn run version && yarn bundle",
-    "postpack": "rm src/console/components/*.js exposr.cjs",
+    "postpack": "rm src/console/components/*.js exposr.mjs",
     "release": "standard-version",
     "build": "babel src/console/components -d src/console/components",
     "version": "scripts/build-version.sh",
     "dev": "babel src/console/components -d src/console/components && ./exposr.sh",
-    "bundle": "esbuild --bundle --platform=node --minify --analyze --outfile=exposr.cjs exposr.js",
+    "bundle": "rollup exposr.js --file exposr.mjs --format es -p @rollup/plugin-commonjs -p @rollup/plugin-json",
     "dist": "scripts/build-dist.sh"
   }
 }

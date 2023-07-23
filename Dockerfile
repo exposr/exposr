@@ -1,20 +1,32 @@
-ARG NODE_IMAGE
-FROM node:${NODE_IMAGE} AS builder
+ARG NODE_VERSION=18.16.1
+ARG ALPINE_VERSION=3.18
+FROM node:${NODE_VERSION}-alpine${ALPINE_VERSION} AS builder
 RUN apk add \
-    git \
-    make
-RUN mkdir /workdir
+    build-base \
+    python3 \
+    curl \
+    git
+RUN touch /.yarnrc && chmod 666 /.yarnrc
 WORKDIR /workdir
-ENTRYPOINT ["/bin/sh", "-c"]
+CMD ["/bin/sh"]
 
-FROM node:${NODE_IMAGE} as platform
-ARG TARGETPLATFORM
-ARG VERSION=*
-COPY dist /dist
-RUN if [ "${TARGETPLATFORM}" = "linux/amd64" ]; then cp /dist/exposr-${VERSION}-linux-x64 /exposr; fi
-RUN if [ "${TARGETPLATFORM}" = "linux/arm64" ]; then cp /dist/exposr-${VERSION}-linux-arm64 /exposr; fi
-RUN if [ "${TARGETPLATFORM}" = "linux/arm/v7" ]; then cp /dist/exposr-${VERSION}-linux-armv7 /exposr; fi
+FROM builder AS dist
+ENV NODE_ENV=production
+ARG DIST_SRC
+COPY ${DIST_SRC} /exposr.tgz
+RUN tar xvf /exposr.tgz -C /
+WORKDIR /package
+RUN yarn install --production --no-default-rc --frozen-lockfile
 
-FROM scratch
-COPY --from=platform /exposr /exposr
-ENTRYPOINT ["/exposr"]
+FROM alpine:${ALPINE_VERSION} as runner
+ENV NODE_ENV=production
+COPY --from=dist /usr/local/bin/node /bin/node
+COPY --from=dist /usr/lib/libstdc++.so.6 /usr/lib/libstdc++.so.6
+COPY --from=dist /usr/lib/libgcc_s.so.1 /usr/lib/libgcc_s.so.1
+COPY --from=dist /package/exposr.mjs /app/exposr.mjs
+COPY --from=dist /package/node_modules /app/node_modules
+RUN mkdir -p /entrypoint-initdb.d
+COPY docker/entrypoint.sh /entrypoint.sh
+WORKDIR /app
+
+ENTRYPOINT ["/entrypoint.sh"]
