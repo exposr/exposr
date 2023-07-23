@@ -51,6 +51,8 @@ jobs:
       - name: Extract package
         run:  |
             tar xvf exposr-*.tgz --strip-components=1
+            mkdir -p dist
+            mv exposr-*.tgz dist/
 
       - name: Setup builder
         run: make builder.build
