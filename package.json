@@ -2,8 +2,8 @@
   "name": "exposr",
   "version": "0.8.0",
   "type": "module",
-  "main": "exposr.cjs",
-  "bin": "exposr.cjs",
+  "main": "exposr.mjs",
+  "bin": "exposr.mjs",
   "author": "Fredrik Lindberg <fli@fli.dev>",
   "license": "MIT",
   "engines": {
@@ -17,8 +17,8 @@
     "package.json",
     "yarn.lock",
     "build.env",
-    "exposr.cjs",
-    "scripts/build-dist.sh"
+    "exposr.mjs",
+    "docker/entrypoint.sh"
   ],
   "dependencies": {
     "async-sema": "^3.1.1",
@@ -42,23 +42,20 @@
     "@babel/core": "^7.22.9",
     "@babel/preset-env": "^7.22.9",
     "@babel/preset-react": "^7.22.5",
-    "esbuild": "^0.18.15",
+    "@rollup/plugin-commonjs": "^25.0.3",
+    "@rollup/plugin-json": "^6.0.0",
     "mocha": "^10.2.0",
-    "pkg": "^5.5.2",
-    "pkg-fetch": "^3.5.2",
+    "rollup": "^3.26.3",
     "standard-version": "^9.5.0"
-  },
-  "resolutions": {
-    "pkg-fetch": "3.5.2"
   },
   "scripts": {
     "prepack": "yarn build && yarn run version && yarn bundle",
-    "postpack": "rm src/console/components/*.js exposr.cjs",
+    "postpack": "rm src/console/components/*.js exposr.mjs",
     "release": "standard-version",
     "build": "babel src/console/components -d src/console/components",
     "version": "scripts/build-version.sh",
     "dev": "babel src/console/components -d src/console/components && ./exposr.sh",
-    "bundle": "esbuild --bundle --platform=node --minify --analyze --outfile=exposr.cjs exposr.js",
+    "bundle": "rollup exposr.js --file exposr.mjs --format es -p @rollup/plugin-commonjs -p @rollup/plugin-json",
     "dist": "scripts/build-dist.sh"
   }
 }

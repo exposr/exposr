@@ -1,7 +1,7 @@
 node_modules
 *.tgz
 src/console/components/*.js
-exposr.cjs
+exposr.mjs
 build.env
 build.js
 dist

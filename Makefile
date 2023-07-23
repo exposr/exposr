@@ -1,16 +1,14 @@
 registry?=exposr
-node_version=18.15.0
-node_image?=$(node_version)-alpine3.17
+node_version=18.16.1
+alpine_version=3.18
 platforms?=linux/amd64,linux/arm64,linux/arm/v7
-# Available build targets https://github.com/vercel/pkg-fetch
-pkg_linux_dist?=node$(node_version)-linuxstatic-arm64,node$(node_version)-linuxstatic-armv7,node$(node_version)-linuxstatic-x64
-pkg_macos_dist?=node$(node_version)-macos-x64
 
 project:=exposr
 version=$(shell [ -e build.env ] && . ./build.env 2> /dev/null && echo $${EXPOSR_BUILD_VERSION} || git describe --tags --always --dirty 2> /dev/null || git rev-parse --short HEAD)
+commit=$(shell [ -e build.env ] && . ./build.env 2> /dev/null && echo $${EXPOSR_BUILD_GIT_COMMIT} || git rev-parse --short HEAD)
 package_name=$(project)-$(version).tgz
 
-all: package.build.container bundle.build.container dist.linux.build.container image.build
+all: package.build.container bundle.build.container image.build
 
 define docker.run
 	docker run --rm -i \
@@ -22,12 +20,12 @@ endef
 
 # Wraps any call and runs inside builder container
 %.container: builder.build
-	$(call docker.run, "make $(subst .container,,$@)")
+	$(call docker.run, make $(subst .container,,$@))
 
 build: bundle.build
 
-release.publish:
-	git push --follow-tags origin
+dist/exposr-$(version).tgz:
+	make package.build.container
 
 package.build:
 	yarn install --no-default-rc --frozen-lockfile
@@ -43,43 +41,57 @@ bundle.build:
 dist.clean:
 	rm -fr dist
 
-dist.linux.build:
-	yarn install --no-default-rc --frozen-lockfile
-	PKG_CACHE_PATH=.pkg-cache yarn run dist linux $(pkg_linux_dist)
-
-dist.macos.build:
-	yarn install --no-default-rc --frozen-lockfile
-	PKG_CACHE_PATH=.pkg-cache yarn run dist macos $(pkg_macos_dist)
-
 # Builder image
 builder.build:
-	docker build --build-arg NODE_IMAGE=$(node_image) -t $(project)-builder --target builder .
-
-# Docker package
-image.build:
 	docker build \
-		--build-arg NODE_IMAGE=$(node_image) \
+		--progress plain \
+		--build-arg NODE_VERSION=$(node_version) \
+		--build-arg ALPINE_VERSION=$(alpine_version) \
+		-t $(project)-builder \
+		--target builder \
+		.
+
+image.build: dist/exposr-$(version).tgz
+	docker build \
+		-f Dockerfile \
+		--progress plain \
+		--build-arg NODE_VERSION=${node_version} \
+		--build-arg ALPINE_VERSION=${alpine_version} \
 		--build-arg VERSION=${version} \
-		--pull -t $(project):$(version) .
+		--build-arg DIST_SRC=dist/exposr-$(version).tgz \
+		--label "org.opencontainers.image.source=https://github.com/exposr/exposr" \
+		--label "org.opencontainers.image.version=$(version)" \
+		--label "org.opencontainers.image.revision=$(commit)" \
+		--label "org.opencontainers.image.description=exposr version $(version) commit $(commit)" \
+		-t $(registry)/$(project):$(version) \
+		.
 
 ifneq (, $(publish))
 push_flag=--push
 endif
-image.buildx:
+image.xbuild:
 	docker buildx create --name exposr-builder --driver docker-container || true
 	docker buildx build \
 		--builder exposr-builder \
+		-f Dockerfile \
+		--progress plain \
 		--platform $(platforms) \
 		$(push_flag) \
-		--build-arg NODE_IMAGE=$(node_image) \
+		--build-arg NODE_VERSION=${node_version} \
+		--build-arg ALPINE_VERSION=${alpine_version} \
 		--build-arg VERSION=${version} \
-		-t $(registry)/$(project):$(version) .
-	docker buildx rm exposr-builder
+		--build-arg DIST_SRC=dist/exposrd-$(version).tgz \
+		--label "org.opencontainers.image.source=https://github.com/exposr/exposr" \
+		--label "org.opencontainers.image.version=$(version)" \
+		--label "org.opencontainers.image.revision=$(commit)" \
+		--label "org.opencontainers.image.description=exposr version $(version) commit $(commit)" \
+		-t $(registry)/$(project):$(version) \
+		.
 
-image.buildx.latest:
+image.xbuild.latest:
 	docker buildx imagetools create --tag $(registry)/$(project):latest $(registry)/$(project):$(version)
 
-image.buildx.unstable:
+image.xbuild.unstable:
 	docker buildx imagetools create --tag $(registry)/$(project):unstable $(registry)/$(project):$(version)
 
-.PHONY: release release.publish builder.build image.build image.buildx image.buildx.latest image.buildx.unstable
+.PHONY: builder.build image.build image.buildx image.xbuild.latest image.xbuild.unstable
