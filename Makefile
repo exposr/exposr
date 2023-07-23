@@ -80,7 +80,7 @@ image.xbuild:
 		--build-arg NODE_VERSION=${node_version} \
 		--build-arg ALPINE_VERSION=${alpine_version} \
 		--build-arg VERSION=${version} \
-		--build-arg DIST_SRC=dist/exposrd-$(version).tgz \
+		--build-arg DIST_SRC=dist/exposr-$(version).tgz \
 		--label "org.opencontainers.image.source=https://github.com/exposr/exposr" \
 		--label "org.opencontainers.image.version=$(version)" \
 		--label "org.opencontainers.image.revision=$(commit)" \
