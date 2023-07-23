@@ -30,7 +30,7 @@
     "human-readable-ids": "^1.0.4",
     "ink": "^4.3.0",
     "log4js": "^6.9.1",
-    "node-emoji": "^1.11.0",
+    "node-emoji": "^2.1.0",
     "port-numbers": "^6.0.0",
     "react": "^18.2.0",
     "react-devtools-core": "^4.28.0",
