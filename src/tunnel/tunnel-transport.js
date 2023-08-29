@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
 import WebSocket from 'ws';
 import TargetConnector from './target-connector.js';
-import WebSocketTransport from '../transport/ws/ws-transport.js';
+import { WebSocketMultiplex } from '@exposr/ws-multiplex';
 import { ClientError } from '../utils/errors.js';
 import Console from '../console/index.js';
 
@@ -87,44 +87,45 @@ export class TunnelTransport extends EventEmitter {
         })
 
         ws.once('open', () => {
-            const transport = new WebSocketTransport({
-                socket: ws
-            });
-            transport.listen((sock) => {
-                this.logger.trace(`listen new sock paused=${sock.isPaused()}`);
-                const target = this.target = this.targetConnector.connect((err, targetSock) => {
+            const wsm = this._wsm = new WebSocketMultiplex(ws) ;
+
+            wsm.on('connection', (sock) => {
+                const target = this._target = this.targetConnector.connect((err, targetSock) => {
                     if (err) {
                         sock.destroy();
-                        target && target.destroy();
-                        this.emit('error', err);
+                        targetSock?.destroy();
                         return;
                     }
-
                     const transformerStream = this.opts.transformerStream();
                     let pipe = targetSock.pipe(sock);
                     if (transformerStream) {
                         pipe = pipe.pipe(transformerStream);
                     }
                     pipe.pipe(targetSock);
-
-                    this.logger.trace(`target connected paused=${sock.isPaused()}`);
-                    sock.accept();
                 });
 
-                target.once('close', () => {
-                    sock.unpipe();
-                    sock.destroy();
-                });
-
-                sock.once('close', () => {
-                    target.unpipe();
+                const close = () => {
+                    target.unpipe(sock);
+                    sock.unpipe(target);
                     target.destroy();
-                });
+                    sock.destroy();
+                };
+                target.on('close', close);
+                target.on('error', close);
+                sock.on('close', close);
+                sock.on('error', close);
+            });
+
+            wsm.on('close', () => {
+                this._close();
+            });
+
+            wsm.on('error', (err) => {
+                this._close(undefined, err.message);
             });
 
             ws.once('close', () => {
-                transport.close();
-                transport.destroy();
+                wsm.destroy();
             });
 
             this.connected = true;
@@ -136,20 +137,33 @@ export class TunnelTransport extends EventEmitter {
         });
 
         ws.once('close', (code, reason) => {
-            this.connected = false;
             reason = reason?.toString('utf-8') || "";
             reason = `${reason != "" ? reason : "Connection closed"} (${code})`
-            this.emit('close', code, reason)
-            this.close();
+            this._close(code, reason);
         });
     }
 
-    close() {
-        if (this._ws_sock) {
-            this._ws_sock.close();
-            this._ws_sock.removeAllListeners();
-            delete this._ws_sock;
+    async _close(code, reason) {
+        if (!this.connected) {
+            return;
         }
+        this.connected = false;
+
+        this._target?.destroy();
+
+        this._wsm?.removeAllListeners();
+        await this._wsm?.destroy();
+        delete this._wsm;
+
+        this._ws_sock?.terminate();
+        this._ws_sock?.removeAllListeners();
+        delete this._ws_sock;
+
+        this.emit('close', code, reason)
+    }
+
+    async close() {
+        return this._close();
     }
 }
 

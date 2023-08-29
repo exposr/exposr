@@ -57,6 +57,13 @@ class Tunnel extends EventEmitter {
         abortController.abort();
     }
 
+    async disconnect() {
+        while (this._transports.length > 0) {
+            const transport = this._transports.pop();
+            await transport.tunnel.close();
+        }
+    }
+
     _emitStatus(source) {
         const current_connections = this._transports.filter((transport) => transport.tunnel.connected == true).length;
         this.emit('status', {

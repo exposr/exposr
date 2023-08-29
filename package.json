@@ -21,6 +21,7 @@
     "docker/entrypoint.sh"
   ],
   "dependencies": {
+    "@exposr/ws-multiplex": "^1.2.0",
     "async-sema": "^3.1.1",
     "axios": "^1.3.6",
     "cli-spinners": "^2.8.0",
@@ -44,18 +45,24 @@
     "@babel/preset-react": "^7.22.5",
     "@rollup/plugin-commonjs": "^25.0.3",
     "@rollup/plugin-json": "^6.0.0",
+    "@types/node": "^20.4.9",
+    "@types/ws": "^8.5.5",
     "mocha": "^10.2.0",
     "rollup": "^3.26.3",
-    "standard-version": "^9.5.0"
+    "standard-version": "^9.5.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.1.6"
   },
   "scripts": {
     "prepack": "yarn build && yarn run version && yarn bundle",
     "postpack": "rm src/console/components/*.js exposr.mjs",
     "release": "standard-version",
-    "build": "babel src/console/components -d src/console/components",
+    "prebuild": "rm -fr out && mkdir out && cp package.json out",
+    "build": "babel src/console/components -d src/console/components && tsc",
     "version": "scripts/build-version.sh",
-    "dev": "babel src/console/components -d src/console/components && ./exposr.sh",
-    "bundle": "rollup exposr.js --file exposr.mjs --format es -p @rollup/plugin-commonjs -p @rollup/plugin-json",
+    "dev": "babel src/console/components -d src/console/components && ts-node exposr.js",
+    "prebundle": "yarn run build",
+    "bundle": "rollup out/exposr.js --file exposr.mjs --format es -p @rollup/plugin-commonjs -p @rollup/plugin-json",
     "dist": "scripts/build-dist.sh"
   }
 }

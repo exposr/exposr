@@ -349,8 +349,10 @@ const maintainTunnel = async (args) => {
     await Promise.race([
         signalWait(['SIGINT', 'SIGTERM'], cancelSignal.signal, 'signal'),
         tunnel.connect(cancelSignal.signal)
-     ]).finally(() => {
+    ]).finally(() => {
         tunnel.removeListener('status', handleStatus);
         cancelSignal.abort();
-     });
+    });
+    await tunnel.disconnect();
+    cons.log.info(`Tunnel disconnected`);
 };

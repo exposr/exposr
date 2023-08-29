@@ -5,4 +5,4 @@ exposr.mjs
 build.env
 build.js
 dist
-.pkg-cache
+out
