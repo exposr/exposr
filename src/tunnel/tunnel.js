@@ -1,8 +1,5 @@
 import { EventEmitter } from 'events';
 import Mutex from '../utils/mutex.js';
-import {
-    isFatal
-} from '../utils/errors.js';
 import { setTimeout } from 'timers/promises';
 import TunnelTransport from './tunnel-transport.js';
 
@@ -128,10 +125,6 @@ class Tunnel extends EventEmitter {
             if (error) {
                 this._setError(id, error);
                 this._emitStatus(id);
-                const fatal = isFatal(error);
-                if (fatal) {
-                    break;
-                }
                 const result = await setTimeout(retryDelay, 'timeout', signal);
                 if (result == 'timeout') {
                     retryDelay = Math.min(retryDelay * (1.1 + (Math.random() * 0.05)), 5000 + Math.floor(Math.random() * 100));

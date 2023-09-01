@@ -314,8 +314,10 @@ const maintainTunnel = async (args) => {
                 const allFailed = status.transports.every((transport) => transport.error != undefined);
                 if (allFailed) {
                     const error = status.transports[0].error;
-                    ctx.cons?.fail(`failed: ${error.message}`);
-                    cons.status.spinner(`Reconnecting tunnel ${config.id}... (${error.message})`)
+                    const msg = error.message ? error.message : error.code;
+
+                    ctx.cons?.fail(`failed ${msg ? ': ' + msg : ''}`);
+                    cons.status.spinner(`Reconnecting tunnel ${config.id}... ${msg ? `(${msg})` : ''}`);
                     ctx.state = "re-init";
                     delete ctx.cons;
                 }
