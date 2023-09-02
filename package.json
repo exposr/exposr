@@ -47,16 +47,16 @@
     "@rollup/plugin-json": "^6.0.0",
     "@types/node": "^20.4.9",
     "@types/ws": "^8.5.5",
+    "commit-and-tag-version": "^11.2.3",
     "mocha": "^10.2.0",
     "rollup": "^3.26.3",
-    "standard-version": "^9.5.0",
     "ts-node": "^10.9.1",
     "typescript": "^5.1.6"
   },
   "scripts": {
     "prepack": "yarn build && yarn run version && yarn bundle",
     "postpack": "rm src/console/components/*.js exposr.mjs",
-    "release": "standard-version",
+    "release": "commit-and-tag-version",
     "prebuild": "rm -fr out && mkdir out && cp package.json out",
     "build": "babel src/console/components -d src/console/components && tsc",
     "version": "scripts/build-version.sh",
