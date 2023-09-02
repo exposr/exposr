@@ -1,6 +1,22 @@
 # Changelog
 
-All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
+All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
+
+## [0.9.0](https://github.com/exposr/exposr/compare/v0.8.0...v0.9.0) (2023-09-02)
+
+
+### ⚠ BREAKING CHANGES
+
+* this is not compatible with older exposrd servers.
+
+### Features
+
+* switch to ws-multiplex for websocket multiplexing ([9f70415](https://github.com/exposr/exposr/commit/9f70415ad95744ea36fa5ac2b4d0e8c3c74e4515))
+
+
+### Bug Fixes
+
+* do not abort connection attempts ([08045e5](https://github.com/exposr/exposr/commit/08045e5a7ab072898a72e92e502b79c4f0e7a506))
 
 ## [0.8.0](https://github.com/exposr/exposr-cli/compare/v0.7.2...v0.8.0) (2023-04-30)
 
