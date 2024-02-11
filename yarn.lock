@@ -1174,12 +1174,12 @@
   dependencies:
     "@jridgewell/trace-mapping" "0.3.9"
 
-"@exposr/ws-multiplex@^1.2.0":
-  version "1.2.0"
-  resolved "https://registry.yarnpkg.com/@exposr/ws-multiplex/-/ws-multiplex-1.2.0.tgz#2f105e25923f5dc5c3f496d2b2b4cc118db50a8f"
-  integrity sha512-Eb0LKX50NeQ9xzEthHbJNUhlbHilcg1Ppo6CzzENrEnq8mKccDfoVPQH2lS5K5q75SqXVHRZQiZFAzCsZneMLA==
+"@exposr/ws-multiplex@^1.4.0":
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/@exposr/ws-multiplex/-/ws-multiplex-1.4.0.tgz#019e22a35362897a97f38f285f0680f9f09066c2"
+  integrity sha512-bhbLnh3rmZZVk65vGMFbvup2y4rJb36G57d7wRwZds0VudVcWcR1XwA+bbV1rVKfaY8+2MOpCkHSpei4oPeKcA==
   dependencies:
-    bufferutil "^4.0.7"
+    bufferutil "^4.0.8"
     ws "^8.13.0"
 
 "@hutson/parse-repository-url@^3.0.0":
@@ -1524,10 +1524,10 @@ buffer-from@^1.0.0:
   resolved "https://registry.yarnpkg.com/buffer-from/-/buffer-from-1.1.2.tgz#2b146a6fd72e80b4f55d255f35ed59a3a9a41bd5"
   integrity sha512-E+XQCRwSbaaiChtv6k6Dwgc+bx+Bs6vuKJHHl5kox/BaKbhiXzqQOwK4cO22yElGp2OCmjwVhT3HmxgyPGnJfQ==
 
-bufferutil@^4.0.7:
-  version "4.0.7"
-  resolved "https://registry.yarnpkg.com/bufferutil/-/bufferutil-4.0.7.tgz#60c0d19ba2c992dd8273d3f73772ffc894c153ad"
-  integrity sha512-kukuqc39WOHtdxtw4UScxF/WVnMFVSQVKhtx3AjZJzhd0RGZZldcrfSEbVsWWe6KNH253574cq5F+wpv0G9pJw==
+bufferutil@^4.0.8:
+  version "4.0.8"
+  resolved "https://registry.yarnpkg.com/bufferutil/-/bufferutil-4.0.8.tgz#1de6a71092d65d7766c4d8a522b261a6e787e8ea"
+  integrity sha512-4T53u4PdgsXqKaIctwF8ifXlRTTmEPJ8iEPWFdGZvcf7sbwYo6FKFEX9eNNAnzFZ7EzJAQ3CJeOtCRA4rDp7Pw==
   dependencies:
     node-gyp-build "^4.3.0"
 
