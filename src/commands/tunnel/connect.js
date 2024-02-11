@@ -151,12 +151,14 @@ export const handler = async function (argv) {
 
     let tunnelId = argv['tunnel-id'];
     let autoCreated = false;
-    if (!tunnelId) {
+
+    const autoCreateTunnel = async (createTunnelId) => {
         const {success, fail} = cons.logger.log(`Creating tunnel...`);
         const tunnel = await createTunnel({
             cons: argv.cons,
             account: accountId,
             server: argv.server,
+            tunnelId: createTunnelId,
         }).then((tunnel) => {
             autoCreated = true;
             tunnelId = tunnel.id;
@@ -166,6 +168,44 @@ export const handler = async function (argv) {
         }).catch((e) => {
             fail(`failed (${e.message})`);
             cons.status.fail('Failed to create tunnel')
+            return undefined;
+        });
+        return tunnel;
+    }
+
+
+    if (!tunnelId) {
+       const tunnel = await autoCreateTunnel();
+        if (!tunnel) {
+            return;
+        }
+    } else {
+        const {success, fail} = cons.logger.log(`Checking tunnel ${tunnelId}...`);
+        const tunnelService = new TunnelService({
+            cons: argv.cons,
+            server: argv.server,
+            account: accountId,
+            tunnelId: tunnelId,
+        });
+
+        const tunnel = await tunnelService.read(true).then((tunnel) => {
+            success(`found`);
+            return tunnel;
+        }).catch(async (e) => {
+            fail(`failed (${e.message})`);
+            if (e instanceof ClientError) {
+                if (e.code === SERVER_ERROR_TUNNEL_NOT_FOUND) {
+                    return await autoCreateTunnel(tunnelId);
+                } else if (e.code === SERVER_ERROR_AUTH_PERMISSION_DENIED) {
+                    cons.status.fail(`Permission denied to access tunnel ${tunnelId}`);
+                } else if (e.code === SERVER_ERROR_AUTH_NO_ACCESS_TOKEN) {
+                    cons.status.fail(`No access token to access tunnel ${tunnelId}`);
+                } else {
+                    cons.status.fail(`Failed to access tunnel ${tunnelId}`);
+                }
+            } else {
+                cons.status.fail(`Failed to access tunnel ${tunnelId}`);
+            }
             return undefined;
         });
 
