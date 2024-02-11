@@ -1,14 +1,14 @@
 registry?=exposr
-node_version=18.17.1
-alpine_version=3.18
-platforms?=linux/amd64,linux/arm64,linux/arm/v7
+node_version=20.11.0
+alpine_version=3.19
+platforms?=linux/amd64,linux/arm64
 
 project:=exposr
 version=$(shell [ -e build.env ] && . ./build.env 2> /dev/null && echo $${EXPOSR_BUILD_VERSION} || git describe --tags --always --dirty 2> /dev/null || git rev-parse --short HEAD)
 commit=$(shell [ -e build.env ] && . ./build.env 2> /dev/null && echo $${EXPOSR_BUILD_GIT_COMMIT} || git rev-parse --short HEAD)
 package_name=$(project)-$(version).tgz
 
-all: package.build.container bundle.build.container image.build
+all: package.build.container image.build
 
 define docker.run
 	docker run --rm -i \
@@ -21,6 +21,9 @@ endef
 # Wraps any call and runs inside builder container
 %.container: builder.build
 	$(call docker.run, make $(subst .container,,$@))
+
+get.version:
+	@echo $(version)
 
 build: bundle.build
 

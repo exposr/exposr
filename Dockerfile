@@ -1,12 +1,16 @@
 ARG NODE_VERSION
-ARG ALPINE_VERSION=3.18
+ARG ALPINE_VERSION=3.19
 FROM node:${NODE_VERSION}-alpine${ALPINE_VERSION} AS builder
 RUN apk add \
     build-base \
+    cmake \
     python3 \
     curl \
     git
 RUN touch /.yarnrc && chmod 666 /.yarnrc
+RUN mkdir /.npm && chmod 777 /.npm
+RUN npm -g install node-gyp
+RUN git config --system --add safe.directory /workdir
 WORKDIR /workdir
 CMD ["/bin/sh"]
 
