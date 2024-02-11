@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.10.0](https://github.com/exposr/exposr/compare/v0.9.0...v0.10.0) (2024-02-11)
+
+
+### Bug Fixes
+
+* auto create named tunnels during connect ([17e48bd](https://github.com/exposr/exposr/commit/17e48bd00e9811b0c8286a35a3facc45520260e5))
+
 ## [0.9.0](https://github.com/exposr/exposr/compare/v0.8.0...v0.9.0) (2023-09-02)
 
 
